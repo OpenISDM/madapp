@@ -23,7 +23,8 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile 'com.android.support:appcompat-v7:22.2.0'
     compile 'com.android.support:support-v4:22.2.0'
-    compile files('libs/osmdroid-android-4.2.jar')
+    compile files('libs/osmdroid-android-4.3.jar')
     compile files('libs/slf4j-android-1.6.1-RC1.jar')
     compile files('json-20140107.jar')
+    compile files('osmbonuspack_v5.1.jar')
 }
