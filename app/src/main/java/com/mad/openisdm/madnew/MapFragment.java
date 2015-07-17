@@ -26,6 +26,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.osmdroid.ResourceProxy;
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer;
+import org.osmdroid.bonuspack.kml.KmlDocument;
 import org.osmdroid.bonuspack.overlays.FolderOverlay;
 import org.osmdroid.bonuspack.overlays.InfoWindow;
 import org.osmdroid.bonuspack.overlays.MapEventsOverlay;
@@ -78,15 +79,17 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
     private ItemizedIconOverlay<OverlayItem> myLocationOverlay;
     private RadiusMarkerClusterer clusterer;
 
+    private JSONObject dataset;
 
 
 
-    private ArrayList<Marker> getOverlayFromJSON(String fileName) throws JSONException{
+
+ /*   private ArrayList<Marker> getOverlayFromJSON(String fileName) throws JSONException{
         AssetLoader loader = new AssetLoader(getActivity().getApplicationContext());
-        String jsonStr = loader.loadJSONFromAsset("TsunamiShelter.json");
 
         ArrayList<Marker> result = new ArrayList<Marker>();
 
+       *//* String jsonStr = loader.loadJSONFromAsset("TsunamiShelter.json");
         JSONObject json = new JSONObject(jsonStr);
         JSONArray array = json.getJSONArray("rows");
         for (int i = 0; i<array.length(); i++){
@@ -101,9 +104,35 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
             newMarker.setTitle(name);
             result.add(newMarker);
 
+        }*//*
+        JSONObject json = null;
+        try{
+            Log.i("abcdefg", "before reading");
+            Toast.makeText(this.getActivity(), "Before reading", Toast.LENGTH_SHORT).show();
+            json = JsonReader.readJsonFromUrl("http://140.109.17.112:5000/taipei");
+            Log.i("abcdefg", "after reading");
+            Toast.makeText(this.getActivity(), "After reading", Toast.LENGTH_SHORT).show();
+        }catch(Exception e){
+            Log.i("abcdefg Exception", "" +e.getMessage());
         }
+
+        JSONArray array = json.getJSONArray("features");
+        for (int i =0; i<array.length(); i++){
+            Double latitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(0);
+            Double longitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
+
+            String name = array.getJSONObject(i).getJSONObject("properties").getString("Park_Name");
+
+            Marker newMarker = new Marker(map);
+            newMarker.setPosition(new GeoPoint(latitude, longitude));
+            newMarker.setInfoWindow(new NavigateInfoWindow(map, newMarker.getPosition()));
+            newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            newMarker.setTitle(name);
+            result.add(newMarker);
+        }
+
         return result;
-    }
+    }*/
 
     public static MapFragment newInstance(int showItemID) {
         Bundle args = new Bundle();
@@ -149,6 +178,8 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
                     savedInstanceState.getDouble(MAP_CENTER_LONGITUDE_KEY));
             zoomLevel = savedInstanceState.getInt(CURRENT_ZOOM_LEVEL_KEY);
         }
+
+
     }
 
     @Override
@@ -175,9 +206,10 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
         userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         userLocationMarker.setInfoWindow(new SetLocationInfoWindow(map, userLocationMarker));
         map.getOverlays().add(userLocationMarker);
+        getDatasetSync("http://140.109.17.112:5000/datasets/taipei");
 
 
-        clusterer = new RadiusMarkerClusterer(this.getActivity().getApplicationContext());
+        /*clusterer = new RadiusMarkerClusterer(this.getActivity().getApplicationContext());
         Drawable clusterIconD = getResources().getDrawable(R.drawable.marker_cluster);
         Bitmap clusterIcon = ((BitmapDrawable)clusterIconD).getBitmap();
         clusterer.setIcon(clusterIcon);
@@ -192,7 +224,7 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
         }
 
         map.getOverlays().add(clusterer);
-        map.invalidate();
+        map.invalidate();*/
 
         return root;
     }
@@ -247,6 +279,60 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
     }
 
 
+
+    private class UpdateDatasetTask extends AsyncTask<Object, Void, JSONObject>{
+        protected JSONObject doInBackground(Object ... params){
+            JSONObject updatedDataset = null;
+            try{
+                updatedDataset = JsonReader.readJsonFromUrl((String)params[0]);
+            }catch (Exception e){
+                Log.i("Read JSON Exception", "Some error");
+            }
+            return updatedDataset;
+        }
+
+        protected void onPostExecute(JSONObject result){
+            dataset = result;
+            try{
+                updateUIWithDataset(result);
+            }catch(JSONException e){
+                Log.i("update UI", "Some error");
+            }
+        }
+    }
+
+    public void getDatasetSync(String url){
+        new UpdateDatasetTask().execute(url);
+    }
+
+    public void updateUIWithDataset(JSONObject dataset) throws JSONException{
+        clusterer = new RadiusMarkerClusterer(this.getActivity().getApplicationContext());
+        Log.i("dataset is null", String.valueOf(dataset == null));
+        JSONArray array = dataset.getJSONArray("features");
+        for (int i =0; i<array.length(); i++){
+            Double latitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
+            Double longitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(0);
+
+            String name = array.getJSONObject(i).getJSONObject("properties").getString("Park_Name");
+
+            Marker newMarker = new Marker(map);
+            newMarker.setPosition(new GeoPoint(latitude, longitude));
+            newMarker.setInfoWindow(new NavigateInfoWindow(map, newMarker.getPosition()));
+            newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            newMarker.setTitle(name);
+            clusterer.add(newMarker);
+        }
+
+        Drawable clusterIconD = getResources().getDrawable(R.drawable.marker_cluster);
+        Bitmap clusterIcon = ((BitmapDrawable)clusterIconD).getBitmap();
+        clusterer.setIcon(clusterIcon);
+        clusterer.setRadius(70);
+
+        map.getOverlays().add(clusterer);
+        map.invalidate();
+
+    }
+
     private class NavigateInfoWindow extends MarkerInfoWindow {
         public NavigateInfoWindow(MapView mapView, final GeoPoint markerLocation) {
             super(R.layout.bonuspack_bubble, mapView);
@@ -275,17 +361,20 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
             btn.setText("Set location");
             btn.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
-                    if (pinPointMarker == null) {
-                        Toast.makeText(view.getContext(), "already set", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(view.getContext(), "setting location...", Toast.LENGTH_SHORT).show();
-                        userLocation = marker.getPosition();
-                        Marker oldUserLocationMarker = userLocationMarker;
-                        userLocationMarker = marker;
-                        map.getOverlays().remove(map.getOverlays().indexOf(oldUserLocationMarker));
-                        pinPointMarker = null;
-                        map.invalidate();
-                    }
+
+                    Toast.makeText(view.getContext(), "setting location...", Toast.LENGTH_SHORT).show();
+                    marker.getInfoWindow().close();
+                    userLocation = marker.getPosition();
+                    Marker oldUserLocationMarker = userLocationMarker;
+                    map.getOverlays().remove(map.getOverlays().indexOf(oldUserLocationMarker));
+                    map.getOverlays().remove(map.getOverlays().indexOf(marker));
+                    userLocationMarker = new Marker(map);
+                    userLocationMarker.setPosition(userLocation);
+                    userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                    map.getOverlays().add(userLocationMarker);
+                    pinPointMarker = null;
+                    map.invalidate();
+
 
                 }
             });
