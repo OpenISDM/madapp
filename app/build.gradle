@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.mad.openisdm.madnew"
-        minSdkVersion 8
+        minSdkVersion 9
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -27,4 +27,5 @@ dependencies {
     compile files('libs/slf4j-android-1.6.1-RC1.jar')
     compile files('json-20140107.jar')
     compile files('osmbonuspack_v5.1.jar')
+    compile 'com.google.android.gms:play-services:7.5.0'
 }

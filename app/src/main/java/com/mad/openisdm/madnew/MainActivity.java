@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class MainActivity extends ActionBarActivity {
     private static final String CURRENT_ITEM_KEY = "current item key";
-    private static final String[] LIST_OF_ITEMS = {"Police Station", "Hospital", "Sport Fields"};
+    private static final String[] LIST_OF_ITEMS = {"Taipei", "Hsinchu", "New Taipei"};
     private int currentItem = 0;
     private FragmentManager fm;
     DrawerLayout drawerLayout;
@@ -47,7 +47,7 @@ public class MainActivity extends ActionBarActivity {
         mapFragment = (MapFragment)fm.findFragmentById(R.id.content_frame);
 
         if (mapFragment == null){
-            mapFragment = MapFragment.newInstance(MapFragment.SHOW_POLICE);
+            mapFragment = MapFragment.newInstance();
             fm.beginTransaction().add(R.id.content_frame, mapFragment).commit();
         }
 
@@ -57,11 +57,13 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 currentItem = position;
-                String item = (String)parent.getAdapter().getItem(position);
-                if (item.equals("Police Station")){
-                    mapFragment.display(MapFragment.SHOW_POLICE);
-                }else {
-                    mapFragment.display(MapFragment.SHOW_HOSPITAL);
+                String item = (String) parent.getAdapter().getItem(position);
+                if (item.equals("Taipei")) {
+                    mapFragment.display(MapFragment.SHOW_TAIPEI);
+                } else if (item.equals("Hsinchu")) {
+                    mapFragment.display(MapFragment.SHOW_HSINCHU);
+                } else if (item.equals("New Taipei")) {
+                    mapFragment.display(MapFragment.SHOW_NEW_TAIPEI);
                 }
                 drawerList.setItemChecked(position, true);
                 drawerLayout.closeDrawers();

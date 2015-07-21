@@ -1,6 +1,7 @@
 package com.mad.openisdm.madnew;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -16,8 +17,18 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.Toast;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
 import junit.framework.Test;
 
@@ -49,14 +60,18 @@ import org.osmdroid.views.overlay.OverlayItem;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 
-public class MapFragment extends Fragment implements LocationListener, MapEventsReceiver {
-    public static final int SHOW_POLICE = 0;
-    public static final int SHOW_HOSPITAL = 1;
+public class MapFragment extends Fragment implements // ConnectionCallbacks, OnConnectionFailedListener,
+        LocationListener, MapEventsReceiver {
+    public static final int SHOW_TAIPEI = 0;
+    public static final int SHOW_HSINCHU = 1;
+    public static final int SHOW_NEW_TAIPEI = 2;
     public static final String SHOW_ITEM_KEY = "item";
 
     private static final GeoPoint SOMEWHERE_IN_GERMANY = new GeoPoint(35.5069039, 139.680770);
+    private static final GeoPoint SOMEWHERE_IN_TAIWAN = new GeoPoint(22.6369039, 120.260770);
 
     private static final String MAP_CENTER_LATITUDE_KEY = "map_center_lat";
     private static final String MAP_CENTER_LONGITUDE_KEY = "map_center_long";
@@ -64,119 +79,123 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
     private static final String USER_LOCATION_LONGITUDE_KEY = "usr_location_long";
     private static final String CURRENT_ZOOM_LEVEL_KEY = "level";
 
-    private static final  GeoPoint DEFAULT_MAP_CENTER = SOMEWHERE_IN_GERMANY;
-    private static final GeoPoint DEFAULT_USER_LOCATION = SOMEWHERE_IN_GERMANY;
+    private static final  GeoPoint DEFAULT_MAP_CENTER = SOMEWHERE_IN_TAIWAN;
+    private static final GeoPoint DEFAULT_USER_LOCATION = SOMEWHERE_IN_TAIWAN;
     private static final int DEFAULT_ZOOM_LEVEL = 9;
 
     private MapController mapController;
     private Marker userLocationMarker;
     private MapView map;
-    private Road currentRoad;
+    private Polyline currentRoadOverlay;
     private int zoomLevel;
     private GeoPoint mapCenter;
     private GeoPoint userLocation;
     private Marker pinPointMarker;
     private ItemizedIconOverlay<OverlayItem> myLocationOverlay;
     private RadiusMarkerClusterer clusterer;
+    private int showItem;
+
+    private GoogleApiClient googleApiClient;
+    private Location lastLocation;
+    private LocationRequest locationRequest;
+
 
     private JSONObject dataset;
 
 
+/*
+    protected synchronized void buildGoogleApiClient() {
+        googleApiClient = new GoogleApiClient.Builder(getActivity())
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+    }
 
+    @Override
+    public void onConnectionFailed(ConnectionResult result){
 
- /*   private ArrayList<Marker> getOverlayFromJSON(String fileName) throws JSONException{
-        AssetLoader loader = new AssetLoader(getActivity().getApplicationContext());
+    }
 
-        ArrayList<Marker> result = new ArrayList<Marker>();
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        lastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                googleApiClient);
+        if (lastLocation != null) {
 
-       *//* String jsonStr = loader.loadJSONFromAsset("TsunamiShelter.json");
-        JSONObject json = new JSONObject(jsonStr);
-        JSONArray array = json.getJSONArray("rows");
-        for (int i = 0; i<array.length(); i++){
-            Double longitude = array.getJSONObject(i).getDouble("lng");
-            Double latitude = array.getJSONObject(i).getDouble("lat");
-            String name = array.getJSONObject(i).getString("Name");
-
-            Marker newMarker = new Marker(map);
-            newMarker.setPosition(new GeoPoint(latitude, longitude));
-            newMarker.setInfoWindow(new NavigateInfoWindow(map, newMarker.getPosition()));
-            newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            newMarker.setTitle(name);
-            result.add(newMarker);
-
-        }*//*
-        JSONObject json = null;
-        try{
-            Log.i("abcdefg", "before reading");
-            Toast.makeText(this.getActivity(), "Before reading", Toast.LENGTH_SHORT).show();
-            json = JsonReader.readJsonFromUrl("http://140.109.17.112:5000/taipei");
-            Log.i("abcdefg", "after reading");
-            Toast.makeText(this.getActivity(), "After reading", Toast.LENGTH_SHORT).show();
-        }catch(Exception e){
-            Log.i("abcdefg Exception", "" +e.getMessage());
         }
 
-        JSONArray array = json.getJSONArray("features");
-        for (int i =0; i<array.length(); i++){
-            Double latitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(0);
-            Double longitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
+        startLocationUpdates();
+    }
 
-            String name = array.getJSONObject(i).getJSONObject("properties").getString("Park_Name");
+    protected void createLocationRequest() {
+        locationRequest = new LocationRequest();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(5000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
 
-            Marker newMarker = new Marker(map);
-            newMarker.setPosition(new GeoPoint(latitude, longitude));
-            newMarker.setInfoWindow(new NavigateInfoWindow(map, newMarker.getPosition()));
-            newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            newMarker.setTitle(name);
-            result.add(newMarker);
-        }
+    protected void startLocationUpdates() {
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                googleApiClient, locationRequest, this);
+    }
 
-        return result;
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurrentLocation = location;
+        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
+        updateUI();
     }*/
 
-    public static MapFragment newInstance(int showItemID) {
+    public static MapFragment newInstance() {
         Bundle args = new Bundle();
-        args.putInt(SHOW_ITEM_KEY, showItemID);
         MapFragment fragment = new MapFragment();
         fragment.setArguments(args);
         return fragment;
 
     }
 
+    public int automaticDisplay(){
+
+        return 0;
+    }
+
     public void display(int showItemID){
-        String msg;
+        showItem = showItemID;
         switch (showItemID){
-            case SHOW_POLICE:
-                msg = "Police";
+            case SHOW_TAIPEI:
+                getDatasetSync("http://140.109.17.112:5000/datasets/taipei");
                 break;
-            case SHOW_HOSPITAL:
-                msg = "Hospital";
+            case SHOW_HSINCHU:
+                getDatasetSync("http://140.109.17.112:5000/datasets/hsinchu");
                 break;
             default:
-                msg = "Default message";
+                getDatasetSync("http://140.109.17.112:5000/datasets/newtaipei");
                 break;
         }
-        Log.i("ITEM ID", msg);
     }
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        int showItemID = getArguments().getInt(SHOW_ITEM_KEY);
-        display(showItemID);
 
+
+        clusterer = null;
         pinPointMarker = null;
+        currentRoadOverlay = null;
         if (savedInstanceState == null){
             userLocation = DEFAULT_USER_LOCATION;
             mapCenter = DEFAULT_MAP_CENTER;
             zoomLevel = DEFAULT_ZOOM_LEVEL;
+            showItem = 30;
         }else{
             userLocation = new GeoPoint(savedInstanceState.getDouble(USER_LOCATION_LATITUDE_KEY),
                     savedInstanceState.getDouble(USER_LOCATION_LONGITUDE_KEY));
             mapCenter = new GeoPoint(savedInstanceState.getDouble(MAP_CENTER_LATITUDE_KEY),
                     savedInstanceState.getDouble(MAP_CENTER_LONGITUDE_KEY));
             zoomLevel = savedInstanceState.getInt(CURRENT_ZOOM_LEVEL_KEY);
+            showItem = savedInstanceState.getInt(SHOW_ITEM_KEY);
         }
 
 
@@ -206,34 +225,14 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
         userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         userLocationMarker.setInfoWindow(new SetLocationInfoWindow(map, userLocationMarker));
         map.getOverlays().add(userLocationMarker);
-        getDatasetSync("http://140.109.17.112:5000/datasets/taipei");
 
-
-        /*clusterer = new RadiusMarkerClusterer(this.getActivity().getApplicationContext());
-        Drawable clusterIconD = getResources().getDrawable(R.drawable.marker_cluster);
-        Bitmap clusterIcon = ((BitmapDrawable)clusterIconD).getBitmap();
-        clusterer.setIcon(clusterIcon);
-        clusterer.setRadius(70);
-        try{
-            ArrayList<Marker> shelterMarkers = getOverlayFromJSON(null);
-            for (Marker marker:shelterMarkers){
-                clusterer.add(marker);
-            }
-        }catch(JSONException e){
-            Log.i("Error", "Some error");
-        }
-
-        map.getOverlays().add(clusterer);
-        map.invalidate();*/
+        display(showItem);
 
         return root;
     }
 
     public void updateUIWithRoad(Road road){
-
-
-        Drawable nodeIcon = getResources().getDrawable(R.drawable.marker_node);
-        Log.i("Null", String.valueOf(road == null));
+        /*Drawable nodeIcon = getResources().getDrawable(R.drawable.marker_node);
         for (int i=0; i<road.mNodes.size(); i++){
             RoadNode node = road.mNodes.get(i);
             Marker nodeMarker = new Marker(map);
@@ -245,11 +244,16 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
 
             map.getOverlays().add(nodeMarker);
         }
-        map.invalidate();
+        map.invalidate();*/
 
-        Polyline roadOverlay = RoadManager.buildRoadOverlay(road, getActivity().getApplicationContext());
+        if (currentRoadOverlay != null){
+            map.getOverlays().remove(map.getOverlays().indexOf(currentRoadOverlay));
+            currentRoadOverlay = null;
+        }
 
-        map.getOverlays().add(roadOverlay);
+        currentRoadOverlay = RoadManager.buildRoadOverlay(road, getActivity().getApplicationContext());
+
+        map.getOverlays().add(currentRoadOverlay);
         map.invalidate();
     }
 
@@ -262,9 +266,9 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
         }
 
         protected void onPostExecute(Road result){
-            currentRoad = result;
-            if (currentRoad.mStatus != Road.STATUS_OK){
-                Log.i("Status", "Not ok");
+            if (result.mStatus != Road.STATUS_OK){
+                Log.i("ROADTAG", "Not ok");
+                Toast.makeText(map.getContext(), "ROAD STATUS NOT OK", Toast.LENGTH_SHORT).show();
             }
             updateUIWithRoad(result);
         }
@@ -286,17 +290,22 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
             try{
                 updatedDataset = JsonReader.readJsonFromUrl((String)params[0]);
             }catch (Exception e){
-                Log.i("Read JSON Exception", "Some error");
+                Log.i("IOTAG", "IO ERROR");
             }
             return updatedDataset;
         }
 
         protected void onPostExecute(JSONObject result){
             dataset = result;
-            try{
-                updateUIWithDataset(result);
-            }catch(JSONException e){
-                Log.i("update UI", "Some error");
+            if (dataset != null){
+                try{
+                    updateUIWithDataset(result);
+                }catch(JSONException e){
+                    Log.i("JSONTAG", "Dataset doesn't follow GEOJSON format");
+                    Toast.makeText(map.getContext(), "GEOJSON format error", Toast.LENGTH_SHORT).show();
+                }
+            }else{
+                Toast.makeText(map.getContext(), "DATASET IO ERROR", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -306,20 +315,32 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
     }
 
     public void updateUIWithDataset(JSONObject dataset) throws JSONException{
+        if (clusterer != null){
+            map.getOverlays().remove(map.getOverlays().indexOf(clusterer));
+            clusterer = null;
+        }
         clusterer = new RadiusMarkerClusterer(this.getActivity().getApplicationContext());
-        Log.i("dataset is null", String.valueOf(dataset == null));
         JSONArray array = dataset.getJSONArray("features");
         for (int i =0; i<array.length(); i++){
             Double latitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
             Double longitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(0);
 
-            String name = array.getJSONObject(i).getJSONObject("properties").getString("Park_Name");
-
             Marker newMarker = new Marker(map);
             newMarker.setPosition(new GeoPoint(latitude, longitude));
-            newMarker.setInfoWindow(new NavigateInfoWindow(map, newMarker.getPosition()));
+            NavigateInfoWindow infoWindow = new NavigateInfoWindow(map, newMarker);
+
+            Iterator<String> keys = array.getJSONObject(i).getJSONObject("properties").keys();
+            while (keys.hasNext()){
+                String key = keys.next();
+                String value = array.getJSONObject(i).getJSONObject("properties").getString(key);
+                infoWindow.addProperty(key, value);
+            }
+
+            //String name = array.getJSONObject(i).getJSONObject("properties").getString("Park_Name");
+
+            newMarker.setInfoWindow(infoWindow);
             newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            newMarker.setTitle(name);
+            newMarker.setTitle("Title");
             clusterer.add(newMarker);
         }
 
@@ -334,14 +355,28 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
     }
 
     private class NavigateInfoWindow extends MarkerInfoWindow {
-        public NavigateInfoWindow(MapView mapView, final GeoPoint markerLocation) {
+        ListView list;
+        ArrayAdapter<String> adapter;
+        public NavigateInfoWindow(MapView mapView, final Marker marker) {
             super(R.layout.bonuspack_bubble, mapView);
+
+            Context context = mapView.getContext();
+            String packageName = context.getPackageName();
+            int listID = context.getResources().getIdentifier("id/bubble_list", (String)null, packageName);
+            list = (ListView)this.mView.findViewById(listID);
+            list.setVisibility(View.VISIBLE);
+
+            ArrayList<String> array = new ArrayList<String>();
+            adapter = new ArrayAdapter<String>(context, R.layout.property_list_item, array);
+            list.setAdapter(adapter);
+
+
             Button btn = (Button)(mView.findViewById(R.id.bubble_btn));
             btn.setText("Navigate");
             btn.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
                     Toast.makeText(view.getContext(), "navigating...", Toast.LENGTH_SHORT).show();
-                    getRoadAsync(userLocation, markerLocation);
+                    getRoadAsync(userLocation, marker.getPosition());
                 }
             });
         }
@@ -350,6 +385,10 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
             super.onOpen(item);
             mView.findViewById(R.id.bubble_btn).setVisibility(View.VISIBLE);
             InfoWindow.closeAllInfoWindowsOn(map);
+        }
+
+        public void addProperty(String key, String value){
+            adapter.add(key + ":" + value);
         }
     }
 
@@ -363,21 +402,17 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
                 public void onClick(View view) {
 
                     Toast.makeText(view.getContext(), "setting location...", Toast.LENGTH_SHORT).show();
-                    marker.getInfoWindow().close();
                     userLocation = marker.getPosition();
-                    Marker oldUserLocationMarker = userLocationMarker;
-                    map.getOverlays().remove(map.getOverlays().indexOf(oldUserLocationMarker));
-                    map.getOverlays().remove(map.getOverlays().indexOf(marker));
-                    userLocationMarker = new Marker(map);
                     userLocationMarker.setPosition(userLocation);
-                    userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                    map.getOverlays().add(userLocationMarker);
+                    map.getOverlays().remove(map.getOverlays().indexOf(marker));
                     pinPointMarker = null;
                     map.invalidate();
 
 
                 }
             });
+
+            closeAllInfoWindowsOn(map);
         }
 
         @Override public void onOpen(Object item){
@@ -396,7 +431,7 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
         saveInstanceState.putInt(CURRENT_ZOOM_LEVEL_KEY, map.getZoomLevel());
         saveInstanceState.putDouble(USER_LOCATION_LATITUDE_KEY, userLocation.getLatitude());
         saveInstanceState.putDouble(USER_LOCATION_LONGITUDE_KEY, userLocation.getLongitude());
-
+        saveInstanceState.putInt(SHOW_ITEM_KEY, showItem);
     }
 
     @Override
@@ -435,13 +470,25 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
     public boolean singleTapConfirmedHelper(GeoPoint p) {
         Toast.makeText(this.getActivity().getApplicationContext(), "Tap on ("+p.getLatitude()+","+p.getLongitude()+")", Toast.LENGTH_SHORT).show();
         InfoWindow.closeAllInfoWindowsOn(map);
+        if (pinPointMarker != null){
+            map.getOverlays().remove(map.getOverlays().indexOf(pinPointMarker));
+            pinPointMarker = null;
+            map.invalidate();
+        }
         return true;
     }
 
     @Override public boolean longPressHelper(GeoPoint p) {
         if (pinPointMarker != null){
             map.getOverlays().remove(map.getOverlays().indexOf(pinPointMarker));
+            pinPointMarker = null;
         }
+
+        if (currentRoadOverlay != null){
+            map.getOverlays().remove(map.getOverlays().indexOf(currentRoadOverlay));
+            currentRoadOverlay = null;
+        }
+
         pinPointMarker = new Marker(map);
         pinPointMarker.setPosition(p);
         pinPointMarker.setInfoWindow(new SetLocationInfoWindow(map, pinPointMarker));
@@ -456,9 +503,6 @@ public class MapFragment extends Fragment implements LocationListener, MapEvents
     @Override
     public void onPause(){
         zoomLevel = map.getZoomLevel();
-        Log.i("Zoom level", "On pause(): zoom level" + map.getZoomLevel());
-        Log.i("Zoom level", "On pause():Latitude" + map.getMapCenter().getLatitude());
-        Log.i("Zoom level", "On pause():Longitude" + map.getMapCenter().getLongitude());
         mapCenter = (GeoPoint)map.getMapCenter();
 
         super.onPause();
