@@ -59,11 +59,11 @@ public class MainActivity extends ActionBarActivity {
                 currentItem = position;
                 String item = (String) parent.getAdapter().getItem(position);
                 if (item.equals("Taipei")) {
-                    mapFragment.display(MapFragment.SHOW_TAIPEI);
+                    mapFragment.fetchShelterAndDisplay(MapFragment.SHOW_TAIPEI);
                 } else if (item.equals("Hsinchu")) {
-                    mapFragment.display(MapFragment.SHOW_HSINCHU);
+                    mapFragment.fetchShelterAndDisplay(MapFragment.SHOW_HSINCHU);
                 } else if (item.equals("New Taipei")) {
-                    mapFragment.display(MapFragment.SHOW_NEW_TAIPEI);
+                    mapFragment.fetchShelterAndDisplay(MapFragment.SHOW_NEW_TAIPEI);
                 }
                 drawerList.setItemChecked(position, true);
                 drawerLayout.closeDrawers();

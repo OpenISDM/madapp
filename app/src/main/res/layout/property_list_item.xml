@@ -2,7 +2,7 @@
 
 
 <TextView
-    android:textColor="#fff"
+    android:textColor="#0000ff"
     android:layout_height="wrap_content"
     android:layout_width="match_parent"
     android:padding="8dp"

@@ -1,13 +1,35 @@
+/*This fragment handles a map UI.
+* The map UI is implemented using OSMDroid's map view. ODMDroid's MapView class permits offline-viewing, nevertheless, other
+* functionality such as routing(navigation) requires wireless access.
+*
+* This fragment  fetches GEOJSON files containing shelter information from a server and displays them on a map. It also provides
+ * other basic map functionalities.
+*
+* When this fragment first creates, the map uses the GPS system to locate the current user location, and display such on the map.
+* During first launch, when user location is undetectable(GPS is weak when used indoor), the default location is determined by the constant DEFAULT_USER_LOCATION, which
+* is currently set to (somewhere in) Taipei. After launching, user location is updated periodically(when user location is detectable).
+*
+* GEOJSON files are also fetched from server when first launched, developers can choose which GEOJSON files to fetch by passing in
+* corresponding constant parameters into the method fetchShelterAndDisplay(String parameter). This method downloads GEOJSON file from a server.
+* parse it, and display them on the map. During the execution of the fragment, only one GEOJSON file can be shown on the map.
+* In otherwords, if some GEOJSON data are already presented on the UI, calling fetchShelterAndDisplay() with a different parameter
+* will fetch the requested data from the server, and replace the previously fetched data. The current default parameter passed into fetchShelterAndDisplay()
+  * is SHOW_TAIPEI, as a result, when first launched,  shelter information in Taipei is loaded onto the map. Default display item can be changed
+  * by modifying the constant, DEFAULT_SHOW_ITEM
+* */
+
+
 package com.mad.openisdm.madnew;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.location.LocationListener;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -24,9 +46,11 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
@@ -56,6 +80,7 @@ import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.ItemizedIconOverlay;
 import org.osmdroid.views.overlay.ItemizedOverlay;
+import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.OverlayItem;
 
 import java.lang.reflect.Array;
@@ -63,8 +88,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 
-public class MapFragment extends Fragment implements // ConnectionCallbacks, OnConnectionFailedListener,
-        LocationListener, MapEventsReceiver {
+public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver {
     public static final int SHOW_TAIPEI = 0;
     public static final int SHOW_HSINCHU = 1;
     public static final int SHOW_NEW_TAIPEI = 2;
@@ -78,32 +102,63 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
     private static final String USER_LOCATION_LATITUDE_KEY = "usr_location_lat";
     private static final String USER_LOCATION_LONGITUDE_KEY = "usr_location_long";
     private static final String CURRENT_ZOOM_LEVEL_KEY = "level";
+    private static final String CURRENT_ROAD_KEY = "current road key";
+    private static final String NAVIGATING_KEY = "navigating";
+
+    private static int REQUEST_CODE_RECOVER_PLAY_SERVICES = 200;
 
     private static final  GeoPoint DEFAULT_MAP_CENTER = SOMEWHERE_IN_TAIWAN;
     private static final GeoPoint DEFAULT_USER_LOCATION = SOMEWHERE_IN_TAIWAN;
     private static final int DEFAULT_ZOOM_LEVEL = 9;
+    private static final int DEFAULT_SHOW_ITEM = SHOW_TAIPEI;
 
     private MapController mapController;
     private Marker userLocationMarker;
     private MapView map;
     private Polyline currentRoadOverlay;
+    private Road currentRoad;
     private int zoomLevel;
     private GeoPoint mapCenter;
     private GeoPoint userLocation;
     private Marker pinPointMarker;
-    private ItemizedIconOverlay<OverlayItem> myLocationOverlay;
     private RadiusMarkerClusterer clusterer;
     private int showItem;
 
+    private boolean navigating = false;
+    private boolean firstStartUp;
+    private boolean recreate;
+
+    public static String jsonStr = null;
+
     private GoogleApiClient googleApiClient;
-    private Location lastLocation;
     private LocationRequest locationRequest;
 
+    private JSONReceiver jsonReceiver;
+    private RoadReceiver roadReceiver;
 
-    private JSONObject dataset;
+    private static boolean MANUAL_LOCATION_DEBUG = true;
+
+    private boolean checkGooglePlayServices(){
+        int checkGooglePlayServices = GooglePlayServicesUtil
+                .isGooglePlayServicesAvailable(getActivity());
+        if (checkGooglePlayServices != ConnectionResult.SUCCESS) {
+		/*
+		* Google Play Services is missing or update is required
+		*  return code could be
+		* SUCCESS,
+		* SERVICE_MISSING, SERVICE_VERSION_UPDATE_REQUIRED,
+		* SERVICE_DISABLED, SERVICE_INVALID.
+		*/
+            GooglePlayServicesUtil.getErrorDialog(checkGooglePlayServices,
+                    (Activity)getActivity(), REQUEST_CODE_RECOVER_PLAY_SERVICES).show();
+
+            return false;
+        }
+
+        return true;
+    }
 
 
-/*
     protected synchronized void buildGoogleApiClient() {
         googleApiClient = new GoogleApiClient.Builder(getActivity())
                 .addConnectionCallbacks(this)
@@ -112,40 +167,55 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
                 .build();
     }
 
-    @Override
-    public void onConnectionFailed(ConnectionResult result){
-
-    }
-
-    @Override
-    public void onConnected(Bundle connectionHint) {
-        lastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                googleApiClient);
-        if (lastLocation != null) {
-
-        }
-
-        startLocationUpdates();
-    }
-
     protected void createLocationRequest() {
         locationRequest = new LocationRequest();
-        locationRequest.setInterval(10000);
+        locationRequest.setInterval(20000);
         locationRequest.setFastestInterval(5000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
     protected void startLocationUpdates() {
-        LocationServices.FusedLocationApi.requestLocationUpdates(
-                googleApiClient, locationRequest, this);
+        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
+    }
+
+    protected void stopLocationUpdates() {
+        if (googleApiClient != null) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(
+                    googleApiClient, this);
+        }
     }
 
     @Override
-    public void onLocationChanged(Location location) {
-        mCurrentLocation = location;
-        mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
-        updateUI();
-    }*/
+    public void onConnected(Bundle bundle) {
+        Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                googleApiClient);
+
+        if (lastLocation != null) {
+            Toast.makeText(getActivity(), "Latitude:" + lastLocation.getLatitude()+", Longitude:"+lastLocation.getLongitude(),Toast.LENGTH_SHORT).show();
+            if (firstStartUp){
+                GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
+                userLocation = location;
+                mapCenter = location;
+
+                /*An akward way to test if onCreateView has been called*/
+                if (userLocationMarker != null){
+                    mapController.setCenter(mapCenter);
+                    updateUserLocation(userLocation);
+                }
+            }
+        }
+        startLocationUpdates();
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
+    }
 
     public static MapFragment newInstance() {
         Bundle args = new Bundle();
@@ -155,50 +225,78 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
 
     }
 
-    public int automaticDisplay(){
 
-        return 0;
-    }
-
-    public void display(int showItemID){
+    public void fetchShelterAndDisplay(int showItemID){
         showItem = showItemID;
+        String url;
         switch (showItemID){
             case SHOW_TAIPEI:
-                getDatasetSync("http://140.109.17.112:5000/datasets/taipei");
+                url="http://140.109.17.112:5000/datasets/taipei";
                 break;
             case SHOW_HSINCHU:
-                getDatasetSync("http://140.109.17.112:5000/datasets/hsinchu");
+                url ="http://140.109.17.112:5000/datasets/hsinchu";
                 break;
             default:
-                getDatasetSync("http://140.109.17.112:5000/datasets/newtaipei");
+                url = "http://140.109.17.112:5000/datasets/newtaipei";
                 break;
         }
-    }
 
+        Intent serviceIntent = new Intent(getActivity(), FetchJSONIntentService.class);
+        Log.i("URLTAG", url);
+        serviceIntent.putExtra(FetchJSONIntentService.URL_KEY, url);
+        getActivity().startService(serviceIntent);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
         clusterer = null;
         pinPointMarker = null;
         currentRoadOverlay = null;
         if (savedInstanceState == null){
+            firstStartUp = true;
             userLocation = DEFAULT_USER_LOCATION;
             mapCenter = DEFAULT_MAP_CENTER;
             zoomLevel = DEFAULT_ZOOM_LEVEL;
-            showItem = 30;
+            showItem = DEFAULT_SHOW_ITEM;
+            currentRoad = null;
+            recreate = false;
+            navigating = false;
         }else{
+            firstStartUp = false;
             userLocation = new GeoPoint(savedInstanceState.getDouble(USER_LOCATION_LATITUDE_KEY),
                     savedInstanceState.getDouble(USER_LOCATION_LONGITUDE_KEY));
             mapCenter = new GeoPoint(savedInstanceState.getDouble(MAP_CENTER_LATITUDE_KEY),
                     savedInstanceState.getDouble(MAP_CENTER_LONGITUDE_KEY));
             zoomLevel = savedInstanceState.getInt(CURRENT_ZOOM_LEVEL_KEY);
             showItem = savedInstanceState.getInt(SHOW_ITEM_KEY);
+            currentRoad = savedInstanceState.getParcelable(CURRENT_ROAD_KEY);
+            recreate = true;
+            navigating = savedInstanceState.getBoolean(NAVIGATING_KEY);
         }
 
+        if (checkGooglePlayServices()) {
+            buildGoogleApiClient();
+            createLocationRequest();
+        }
+    }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (googleApiClient != null) {
+            googleApiClient.connect();
+        }
+
+        IntentFilter filter1 = new IntentFilter(JSONReceiver.RECEIVE_JSON_ACTION);
+        filter1.addCategory(Intent.CATEGORY_DEFAULT);
+        jsonReceiver = new JSONReceiver();
+        getActivity().registerReceiver(jsonReceiver, filter1);
+
+        IntentFilter filter2= new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
+        filter2.addCategory(Intent.CATEGORY_DEFAULT);
+        roadReceiver = new RoadReceiver();
+        getActivity().registerReceiver(roadReceiver, filter2);
     }
 
     @Override
@@ -219,14 +317,17 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
         MapEventsOverlay mapEventsOverlay = new MapEventsOverlay(this.getActivity().getApplicationContext(), this);
         map.getOverlays().add(0, mapEventsOverlay);
 
-
         userLocationMarker = new Marker(map);
         userLocationMarker.setPosition(userLocation);
         userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         userLocationMarker.setInfoWindow(new SetLocationInfoWindow(map, userLocationMarker));
+        Drawable userIcon = getResources().getDrawable(R.drawable.masculineavatar32);
+        userLocationMarker.setIcon(userIcon);
+
         map.getOverlays().add(userLocationMarker);
 
-        display(showItem);
+        fetchShelterAndDisplay(showItem);
+
 
         return root;
     }
@@ -245,81 +346,33 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
             map.getOverlays().add(nodeMarker);
         }
         map.invalidate();*/
+        updateRoadOverlay(RoadManager.buildRoadOverlay(road, getActivity()));
+    }
 
-        if (currentRoadOverlay != null){
-            map.getOverlays().remove(map.getOverlays().indexOf(currentRoadOverlay));
-            currentRoadOverlay = null;
-        }
+    private void updateRoadOverlay(Polyline roadOverlay){
+        clearRoad();
+        currentRoadOverlay = roadOverlay;
+        addOverlay(roadOverlay);
+    }
 
-        currentRoadOverlay = RoadManager.buildRoadOverlay(road, getActivity().getApplicationContext());
-
-        map.getOverlays().add(currentRoadOverlay);
+    private void addOverlay(Overlay overlay){
+        map.getOverlays().add(overlay);
         map.invalidate();
     }
 
-    private class UpdateRoadTask extends AsyncTask<Object, Void, Road> {
-        protected Road doInBackground(Object ... params){
-            ArrayList<GeoPoint> waypoints = (ArrayList<GeoPoint>)params[0];
-            RoadManager roadManager = null;
-            roadManager = new OSRMRoadManager();
-            return roadManager.getRoad(waypoints);
-        }
-
-        protected void onPostExecute(Road result){
-            if (result.mStatus != Road.STATUS_OK){
-                Log.i("ROADTAG", "Not ok");
-                Toast.makeText(map.getContext(), "ROAD STATUS NOT OK", Toast.LENGTH_SHORT).show();
-            }
-            updateUIWithRoad(result);
-        }
-
+    private void removeOverlay(Overlay overlay){
+        map.getOverlays().remove(map.getOverlays().indexOf(overlay));
+        map.invalidate();
     }
 
-    public void getRoadAsync(GeoPoint startPoint, GeoPoint endPoint){
-        ArrayList<GeoPoint> waypoints = new ArrayList<GeoPoint>();
-        waypoints.add(startPoint);
-        waypoints.add(endPoint);
-        new UpdateRoadTask().execute(waypoints);
+    private void updateClusterer(RadiusMarkerClusterer newClusterer){
+        clearClusterer();
+        clusterer = newClusterer;
+        addOverlay(newClusterer);
     }
 
-
-
-    private class UpdateDatasetTask extends AsyncTask<Object, Void, JSONObject>{
-        protected JSONObject doInBackground(Object ... params){
-            JSONObject updatedDataset = null;
-            try{
-                updatedDataset = JsonReader.readJsonFromUrl((String)params[0]);
-            }catch (Exception e){
-                Log.i("IOTAG", "IO ERROR");
-            }
-            return updatedDataset;
-        }
-
-        protected void onPostExecute(JSONObject result){
-            dataset = result;
-            if (dataset != null){
-                try{
-                    updateUIWithDataset(result);
-                }catch(JSONException e){
-                    Log.i("JSONTAG", "Dataset doesn't follow GEOJSON format");
-                    Toast.makeText(map.getContext(), "GEOJSON format error", Toast.LENGTH_SHORT).show();
-                }
-            }else{
-                Toast.makeText(map.getContext(), "DATASET IO ERROR", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    public void getDatasetSync(String url){
-        new UpdateDatasetTask().execute(url);
-    }
-
-    public void updateUIWithDataset(JSONObject dataset) throws JSONException{
-        if (clusterer != null){
-            map.getOverlays().remove(map.getOverlays().indexOf(clusterer));
-            clusterer = null;
-        }
-        clusterer = new RadiusMarkerClusterer(this.getActivity().getApplicationContext());
+    private RadiusMarkerClusterer buildClustererFromJSONObject(JSONObject dataset) throws JSONException{
+        RadiusMarkerClusterer newClusterer = new RadiusMarkerClusterer(this.getActivity());
         JSONArray array = dataset.getJSONArray("features");
         for (int i =0; i<array.length(); i++){
             Double latitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
@@ -327,6 +380,8 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
 
             Marker newMarker = new Marker(map);
             newMarker.setPosition(new GeoPoint(latitude, longitude));
+            Drawable shelterIcon = getResources().getDrawable(R.drawable.position_mark_32);
+            newMarker.setIcon(shelterIcon);
             NavigateInfoWindow infoWindow = new NavigateInfoWindow(map, newMarker);
 
             Iterator<String> keys = array.getJSONObject(i).getJSONObject("properties").keys();
@@ -340,43 +395,94 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
 
             newMarker.setInfoWindow(infoWindow);
             newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            newMarker.setTitle("Title");
-            clusterer.add(newMarker);
+            newMarker.setTitle("omg " + i%8 + "+" + i%5 + "="  + (i%4-2)*2);
+            newClusterer.add(newMarker);
         }
 
         Drawable clusterIconD = getResources().getDrawable(R.drawable.marker_cluster);
         Bitmap clusterIcon = ((BitmapDrawable)clusterIconD).getBitmap();
-        clusterer.setIcon(clusterIcon);
-        clusterer.setRadius(70);
+        newClusterer.setIcon(clusterIcon);
+        newClusterer.setRadius(70);
+        return newClusterer;
+    }
 
-        map.getOverlays().add(clusterer);
-        map.invalidate();
+    public void
+    updateUIWithJSON(JSONObject dataset) throws JSONException{
+        updateClusterer(buildClustererFromJSONObject(dataset));
+        //clearRoad();
+        //clearInfoWindow();
+    }
 
+    public void clearClusterer(){
+        if (clusterer != null){
+            removeOverlay(clusterer);
+            clusterer = null;
+        }
+    }
+
+    public void clearRoad(){
+        if (currentRoadOverlay != null){
+            removeOverlay(currentRoadOverlay);
+            currentRoadOverlay = null;
+        }
+    }
+
+    public void clearPinpoint(){
+        if (pinPointMarker != null){
+            removeOverlay(pinPointMarker);
+            pinPointMarker = null;
+        }
+    }
+
+    public void clearInfoWindow(){
+        InfoWindow.closeAllInfoWindowsOn(map);
     }
 
     private class NavigateInfoWindow extends MarkerInfoWindow {
         ListView list;
         ArrayAdapter<String> adapter;
+
+        Button naviBtn,closeBtn;
         public NavigateInfoWindow(MapView mapView, final Marker marker) {
             super(R.layout.bonuspack_bubble, mapView);
 
             Context context = mapView.getContext();
             String packageName = context.getPackageName();
-            int listID = context.getResources().getIdentifier("id/bubble_list", (String)null, packageName);
-            list = (ListView)this.mView.findViewById(listID);
+            list = (ListView)this.mView.findViewById(R.id.bubble_list);
             list.setVisibility(View.VISIBLE);
+
+
 
             ArrayList<String> array = new ArrayList<String>();
             adapter = new ArrayAdapter<String>(context, R.layout.property_list_item, array);
             list.setAdapter(adapter);
 
-
-            Button btn = (Button)(mView.findViewById(R.id.bubble_btn));
-            btn.setText("Navigate");
-            btn.setOnClickListener(new View.OnClickListener() {
+            naviBtn = (Button)(mView.findViewById(R.id.bubble_btn));
+            naviBtn.setText("Navigate");
+            naviBtn.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
-                    Toast.makeText(view.getContext(), "navigating...", Toast.LENGTH_SHORT).show();
-                    getRoadAsync(userLocation, marker.getPosition());
+                    //if (!navigating) {
+                        fetchRoadAndDisplay(userLocation, marker.getPosition());
+                        /*navigating = true;
+                        btn.setText("Cancel Navi");*/
+                    //} else {
+                        /*Log.i("NAVITAG", "currentRoadOverlay null?" + (currentRoadOverlay == null));
+                        if(currentRoadOverlay != null){
+                            removeOverlay(currentRoadOverlay);
+                            currentRoadOverlay = null;
+                            map.invalidate();
+                            navigating = false;
+                            btn.setText("Navigate");
+                        }*/
+                    //}
+                }
+            });
+
+            closeBtn = (Button)(mView.findViewById(R.id.bubble_close));
+            closeBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    close();
                 }
             });
         }
@@ -384,7 +490,7 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
         @Override public void onOpen(Object item){
             super.onOpen(item);
             mView.findViewById(R.id.bubble_btn).setVisibility(View.VISIBLE);
-            InfoWindow.closeAllInfoWindowsOn(map);
+            clearInfoWindow();
         }
 
         public void addProperty(String key, String value){
@@ -396,23 +502,30 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
     private class SetLocationInfoWindow extends MarkerInfoWindow {
         public SetLocationInfoWindow(MapView mapView, final Marker marker) {
             super(R.layout.bonuspack_bubble, mapView);
-            Button btn = (Button)(mView.findViewById(R.id.bubble_btn));
-            btn.setText("Set location");
-            btn.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View view) {
+            Button locationBtn = (Button)(mView.findViewById(R.id.bubble_btn));
 
-                    Toast.makeText(view.getContext(), "setting location...", Toast.LENGTH_SHORT).show();
-                    userLocation = marker.getPosition();
-                    userLocationMarker.setPosition(userLocation);
-                    map.getOverlays().remove(map.getOverlays().indexOf(marker));
-                    pinPointMarker = null;
-                    map.invalidate();
+            if (MANUAL_LOCATION_DEBUG){
+                locationBtn.setText("Set location");
+                locationBtn.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View view) {
+                        if (!userLocation.equals(marker.getPosition())){
+                            Toast.makeText(view.getContext(), "setting location...", Toast.LENGTH_SHORT).show();
+                            updateUserLocation(marker.getPosition());
+                            removeOverlay(marker);
+                            pinPointMarker = null;
+                        }
+                    }
+                });
+            }
 
-
+            Button closeBtn = (Button)(mView.findViewById(R.id.bubble_close));
+            closeBtn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    close();
                 }
             });
 
-            closeAllInfoWindowsOn(map);
         }
 
         @Override public void onOpen(Object item){
@@ -422,7 +535,17 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
         }
     }
 
+    private void updateUserLocation(double latitude, double longitude){
+        userLocation = new GeoPoint(latitude, longitude);
+        userLocationMarker.setPosition(userLocation);
+        map.invalidate();
+    }
 
+    private void updateUserLocation(GeoPoint location){
+        userLocation = location;
+        userLocationMarker.setPosition(userLocation);
+        map.invalidate();
+    }
 
     @Override
     public void onSaveInstanceState(Bundle saveInstanceState){
@@ -432,6 +555,9 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
         saveInstanceState.putDouble(USER_LOCATION_LATITUDE_KEY, userLocation.getLatitude());
         saveInstanceState.putDouble(USER_LOCATION_LONGITUDE_KEY, userLocation.getLongitude());
         saveInstanceState.putInt(SHOW_ITEM_KEY, showItem);
+        saveInstanceState.putBoolean(NAVIGATING_KEY, navigating);
+        saveInstanceState.putParcelable(CURRENT_ROAD_KEY, currentRoad);
+
     }
 
     @Override
@@ -440,71 +566,129 @@ public class MapFragment extends Fragment implements // ConnectionCallbacks, OnC
         String msg = "New Latitude: " + location.getLatitude()
                 + "New Longitude: " + location.getLongitude();
 
-        Toast.makeText(getActivity().getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
-        //userLocation = new GeoPoint(location.getLatitude(), location.getLongitude());
-    }
 
-    @Override
-    public void onProviderDisabled(String provider) {
+        Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
+        updateUserLocation(location.getLatitude(), location.getLongitude());
+        if (navigating){
+            fetchRoadAndDisplay(userLocation, new GeoPoint(location.getLatitude(), location.getLongitude()));
+        }
+}
 
-       // Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-       // startActivity(intent);
-        Toast.makeText(getActivity().getApplicationContext(), "Gps is turned off!! ",
-                Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-
-        Toast.makeText(getActivity().getApplicationContext(), "Gps is turned on!! ",
-                Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-        // TODO Auto-generated method stub
-
-    }
 
     @Override
     public boolean singleTapConfirmedHelper(GeoPoint p) {
-        Toast.makeText(this.getActivity().getApplicationContext(), "Tap on ("+p.getLatitude()+","+p.getLongitude()+")", Toast.LENGTH_SHORT).show();
-        InfoWindow.closeAllInfoWindowsOn(map);
-        if (pinPointMarker != null){
-            map.getOverlays().remove(map.getOverlays().indexOf(pinPointMarker));
-            pinPointMarker = null;
-            map.invalidate();
-        }
+        navigating = false;
+        currentRoad = null;
+        clearInfoWindow();
+        clearPinpoint();
+        clearRoad();
         return true;
+    }
+
+    private void updatePinPoint(Marker newPinpoint){
+        clearPinpoint();
+        pinPointMarker = newPinpoint;
+        addOverlay(newPinpoint);
     }
 
     @Override public boolean longPressHelper(GeoPoint p) {
-        if (pinPointMarker != null){
-            map.getOverlays().remove(map.getOverlays().indexOf(pinPointMarker));
-            pinPointMarker = null;
-        }
 
-        if (currentRoadOverlay != null){
-            map.getOverlays().remove(map.getOverlays().indexOf(currentRoadOverlay));
-            currentRoadOverlay = null;
-        }
+        clearRoad();
 
-        pinPointMarker = new Marker(map);
-        pinPointMarker.setPosition(p);
-        pinPointMarker.setInfoWindow(new SetLocationInfoWindow(map, pinPointMarker));
-        pinPointMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-
-        map.getOverlays().add(pinPointMarker);
-        map.invalidate();
+        Marker newPinPoint = new Marker(map);
+        newPinPoint.setPosition(p);
+        newPinPoint.setInfoWindow(new SetLocationInfoWindow(map, newPinPoint));
+        newPinPoint.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
+        Drawable pinpointIcon = getResources().getDrawable(R.drawable.spyhole_32);
+        newPinPoint.setIcon(pinpointIcon);
+        updatePinPoint(newPinPoint);
         return true;
     }
 
-
     @Override
     public void onPause(){
+        super.onPause();
         zoomLevel = map.getZoomLevel();
         mapCenter = (GeoPoint)map.getMapCenter();
+    }
 
-        super.onPause();
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (googleApiClient != null) {
+            stopLocationUpdates();
+            googleApiClient.disconnect();
+        }
+
+        getActivity().unregisterReceiver(roadReceiver);
+        getActivity().unregisterReceiver(jsonReceiver);
+    }
+
+
+    public void fetchRoadAndDisplay(GeoPoint startPoint, GeoPoint endPoint){
+        Intent serviceIntent = new Intent(getActivity(), FetchRoadIntentService.class);
+        serviceIntent.putExtra(FetchRoadIntentService.START_POINT_LAT, startPoint.getLatitude());
+        serviceIntent.putExtra(FetchRoadIntentService.START_POINT_LONG, startPoint.getLongitude());
+        serviceIntent.putExtra(FetchRoadIntentService.END_POINT_LAT, endPoint.getLatitude());
+        serviceIntent.putExtra(FetchRoadIntentService.END_POINT_LONG, endPoint.getLongitude());
+        getActivity().startService(serviceIntent);
+    }
+
+    public class JSONReceiver extends BroadcastReceiver{
+        public static final String RECEIVE_JSON_ACTION = "com.mad.openisdm.madnew.JSONReceive";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            JSONObject jsonObject = null;
+            String jsonText = intent.getStringExtra(FetchJSONIntentService.JSON_OBJECT_KEY);
+            boolean exception = intent.getBooleanExtra(FetchJSONIntentService.EXCEPTION_KEY, false);
+            if (exception){
+                Toast.makeText(context, "IO ERROR", Toast.LENGTH_SHORT).show();
+                Log.i("IOTAG", "IO ERROR");
+            }else{
+                try {
+                    jsonObject = new JSONObject(jsonStr);
+                }catch (JSONException e){
+                    Toast.makeText(context, "PARSE ERROR", Toast.LENGTH_SHORT).show();
+                    Log.i("JSONTAG", "PARSE ERROR-CHECK JSON SYNTAX");
+                }
+                Log.i("JSONTAG", ""+(jsonObject == null));
+                if (jsonObject != null) {
+                    try {
+                        updateUIWithJSON(jsonObject);
+                        if (recreate){
+                            if (navigating){
+                                updateUIWithRoad(currentRoad);
+                            }
+                            recreate = false;
+                        }else{
+                            clearInfoWindow();
+                            clearRoad();
+                        }
+                    } catch (JSONException e) {
+                        Log.i("JSONTAG", "Dataset doesn't follow GEOJSON format");
+                        Toast.makeText(map.getContext(), "GEOJSON format error", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
+        }
+    }
+
+    public class RoadReceiver extends BroadcastReceiver{
+        public static final String RECEIVE_ROAD_ACTION ="com.mad.openisdm.madnew.roadReceive";
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Road road = (Road)(intent.getParcelableExtra(FetchRoadIntentService.ROAD_KEY));
+            if (road.mStatus != Road.STATUS_OK){
+                Log.i("ROADTAG", "Not ok");
+                Toast.makeText(map.getContext(), "ROAD STATUS NOT OK", Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(context, "navigating...", Toast.LENGTH_SHORT).show();
+                updateUIWithRoad(road);
+                navigating = true;
+                currentRoad = road;
+            }
+        }
     }
 }
+
