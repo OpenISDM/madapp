@@ -1,13 +1,7 @@
-package com.mad.openisdm.madnew;
+package com.mad.openisdm.madnew.app;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.content.Context;
-import android.util.Log;
-
-import org.json.JSONObject;
-
-import java.net.URL;
 
 
 public class FetchJSONIntentService extends IntentService {
@@ -30,12 +24,12 @@ public class FetchJSONIntentService extends IntentService {
             exception = true;
         }
         Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(MapFragment.JSONReceiver.RECEIVE_JSON_ACTION);
+        broadcastIntent.setAction(JSONBroadcastReceiverManager.JSONBroadcastReceiver.RECEIVE_JSON_ACTION);
 
         /*Directly modifying static variable is a bad design.
         * It would be safer and more secure to pass jsonText as intent extras, but in this case, it is possible that jsonText exceeds the 1MB maximum size limit
         * for intent extras. Thus the less favourable method. More thinking required*/
-        MapFragment.jsonStr = jsonText;
+        JSONDataHolder.jsonStr = jsonText;
         //broadcastIntent.putExtra(JSON_OBJECT_KEY, jsonText);
         broadcastIntent.putExtra(EXCEPTION_KEY, exception);
         broadcastIntent.addCategory(Intent.CATEGORY_DEFAULT);

@@ -19,7 +19,7 @@
 * */
 
 
-package com.mad.openisdm.madnew;
+package com.mad.openisdm.madnew.app;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -30,10 +30,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -41,7 +38,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -53,42 +49,31 @@ import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListe
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-
-import junit.framework.Test;
+import com.mad.openisdm.madnew.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.osmdroid.ResourceProxy;
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer;
-import org.osmdroid.bonuspack.kml.KmlDocument;
-import org.osmdroid.bonuspack.overlays.FolderOverlay;
 import org.osmdroid.bonuspack.overlays.InfoWindow;
 import org.osmdroid.bonuspack.overlays.MapEventsOverlay;
 import org.osmdroid.bonuspack.overlays.MapEventsReceiver;
 import org.osmdroid.bonuspack.overlays.Marker;
 import org.osmdroid.bonuspack.overlays.MarkerInfoWindow;
 import org.osmdroid.bonuspack.overlays.Polyline;
-import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
-import org.osmdroid.bonuspack.routing.RoadNode;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.util.ResourceProxyImpl;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
-import org.osmdroid.views.overlay.ItemizedIconOverlay;
-import org.osmdroid.views.overlay.ItemizedOverlay;
 import org.osmdroid.views.overlay.Overlay;
-import org.osmdroid.views.overlay.OverlayItem;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 
 
-public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver {
+public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver, JSONReceiver {
     public static final int SHOW_TAIPEI = 0;
     public static final int SHOW_HSINCHU = 1;
     public static final int SHOW_NEW_TAIPEI = 2;
@@ -124,6 +109,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     private RadiusMarkerClusterer clusterer;
     private int showItem;
 
+    private Activity activity;
     private boolean navigating = false;
     private boolean firstStartUp;
     private boolean recreate;
@@ -288,10 +274,10 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             googleApiClient.connect();
         }
 
-        IntentFilter filter1 = new IntentFilter(JSONReceiver.RECEIVE_JSON_ACTION);
+       /* IntentFilter filter1 = new IntentFilter(JSONReceiver.RECEIVE_JSON_ACTION);
         filter1.addCategory(Intent.CATEGORY_DEFAULT);
         jsonReceiver = new JSONReceiver();
-        getActivity().registerReceiver(jsonReceiver, filter1);
+        getActivity().registerReceiver(jsonReceiver, filter1);*/
 
         IntentFilter filter2= new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
         filter2.addCategory(Intent.CATEGORY_DEFAULT);
@@ -326,7 +312,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
 
         map.getOverlays().add(userLocationMarker);
 
-        fetchShelterAndDisplay(showItem);
+        //fetchShelterAndDisplay(showItem);
 
 
         return root;
@@ -371,8 +357,16 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         addOverlay(newClusterer);
     }
 
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        this.activity = activity;
+        Log.e("onAttach", "activity == null?" + (activity == null));
+    }
+
     private RadiusMarkerClusterer buildClustererFromJSONObject(JSONObject dataset) throws JSONException{
-        RadiusMarkerClusterer newClusterer = new RadiusMarkerClusterer(this.getActivity());
+        Log.e("buildClustere", "activity == null?" + (activity == null));
+        RadiusMarkerClusterer newClusterer = new RadiusMarkerClusterer(activity);
         JSONArray array = dataset.getJSONArray("features");
         for (int i =0; i<array.length(); i++){
             Double latitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
@@ -436,6 +430,20 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
 
     public void clearInfoWindow(){
         InfoWindow.closeAllInfoWindowsOn(map);
+    }
+
+    @Override
+    public void handleJSON(JSONObject jsonObject) throws JSONException{
+        updateUIWithJSON(jsonObject);
+        if (recreate){
+            if (navigating){
+                updateUIWithRoad(currentRoad);
+            }
+            recreate = false;
+        }else{
+            clearInfoWindow();
+            clearRoad();
+        }
     }
 
     private class NavigateInfoWindow extends MarkerInfoWindow {
@@ -621,7 +629,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         }
 
         getActivity().unregisterReceiver(roadReceiver);
-        getActivity().unregisterReceiver(jsonReceiver);
+       /* getActivity().unregisterReceiver(jsonReceiver);*/
     }
 
 
@@ -634,7 +642,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         getActivity().startService(serviceIntent);
     }
 
-    public class JSONReceiver extends BroadcastReceiver{
+    /*public class JSONReceiver extends BroadcastReceiver{
         public static final String RECEIVE_JSON_ACTION = "com.mad.openisdm.madnew.JSONReceive";
 
         @Override
@@ -643,7 +651,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             String jsonText = intent.getStringExtra(FetchJSONIntentService.JSON_OBJECT_KEY);
             boolean exception = intent.getBooleanExtra(FetchJSONIntentService.EXCEPTION_KEY, false);
             if (exception){
-                Toast.makeText(context, "IO ERROR", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "MapFrag-IO ERROR", Toast.LENGTH_SHORT).show();
                 Log.i("IOTAG", "IO ERROR");
             }else{
                 try {
@@ -672,10 +680,10 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
                 }
             }
         }
-    }
+    }*/
 
     public class RoadReceiver extends BroadcastReceiver{
-        public static final String RECEIVE_ROAD_ACTION ="com.mad.openisdm.madnew.roadReceive";
+        public static final String RECEIVE_ROAD_ACTION ="com.mad.openisdm.madnew.MapFragment.roadReceive";
         @Override
         public void onReceive(Context context, Intent intent) {
             Road road = (Road)(intent.getParcelableExtra(FetchRoadIntentService.ROAD_KEY));

@@ -1,0 +1,19 @@
+This package contains the necessary components to fetch GeoJSON files containing shelter information from a particular server,
+ and display them in different formats. Current implementation provides two views. A map view and a list view. User only
+ needs to host the fragments, MapFragment and ShelterListFragment, in their activity to obtain the corresponding views.
+ User can host one fragment, or multiple of them.
+
+The fragments are only responsible for providing the basic view layout. Without fetching the GEOJSON files,
+they will show no shelter information.
+
+Before fetching the files,  user needs to call JSONBroadcastReceiverManager.register() in the
+hosting activity(preferably in onCreate() or onStart()). When the Fragments(MapFragment and ShelterListFragment) has been
+initiated and added to FragmentManager, insert the Fragment objects into the list of receiver using
+JSONBroadcastReceiverManager.addReceiver(JSONReceiver).
+
+After the BroadcastReceiver has been setup, user can then select the GEOJSON server source with ShelterSourceSelector.selectShelterSource(int),
+and finally fetch the files with ShelterSourceSelector.fetchFromServer(). User can change the source anytime
+during the lifetime of the hosting activity. For instance, the source can be changed in the onClick event
+of a Button.
+
+When the hosting activity fades into background, user may also wish to unregister broadcast receiver with JSONBroadcastReceiverManager.unregister() (preferrably in onStop() or onPause()).

@@ -1,4 +1,4 @@
-package com.mad.openisdm.madnew;
+package com.mad.openisdm.madnew.main;
 /**
  * Copyright (c) 2014  OpenISDM
  *
@@ -29,9 +29,7 @@ package com.mad.openisdm.madnew;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.v4.app.DialogFragment;
 
 public class AlertDialogFragment extends DialogFragment {

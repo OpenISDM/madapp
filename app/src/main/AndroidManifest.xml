@@ -15,7 +15,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name=".MainActivity"
+            android:name=".main.MainActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,11 +25,11 @@
         </activity>
 
         <service
-            android:name=".FetchJSONIntentService"
+            android:name=".app.FetchJSONIntentService"
             android:exported="false" >
         </service>
         <service
-            android:name=".FetchRoadIntentService"
+            android:name=".app.FetchRoadIntentService"
             android:exported="false" >
         </service>
     </application>

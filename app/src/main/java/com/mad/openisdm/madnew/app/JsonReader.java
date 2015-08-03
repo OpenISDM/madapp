@@ -1,4 +1,4 @@
-package com.mad.openisdm.madnew;
+package com.mad.openisdm.madnew.app;
 
 import android.util.Log;
 
