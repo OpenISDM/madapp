@@ -20,109 +20,104 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.mad.openisdm.madnew.R;
-import com.mad.openisdm.madnew.app.JSONBroadcastReceiverManager;
+import com.mad.openisdm.madnew.app.OnLocationChangedListener;
+import com.mad.openisdm.madnew.app.Shelter;
+import com.mad.openisdm.madnew.app.ShelterManager;
 import com.mad.openisdm.madnew.app.MapFragment;
 import com.mad.openisdm.madnew.app.ShelterListFragment;
 import com.mad.openisdm.madnew.app.ShelterSourceSelector;
 
+import org.osmdroid.util.GeoPoint;
+
+import java.util.ArrayList;
 import java.util.Calendar;
 
 
-public class  MainActivity extends ActionBarActivity {
+public class  MainActivity extends ActionBarActivity implements Shelter.OnShelterReceiveListener, OnLocationChangedListener {
     private static final String CURRENT_ITEM_KEY = "current item key";
     private static final String[] LIST_OF_ITEMS = {"Taipei", "Hsinchu", "New Taipei"};
+    private static final String LIST_FRAGMENT_KEY = "LIST_FRAGMENT_KEY";
+    private static final String MAP_FRAGMENT_KEY = "MAP_FRAGMENT_KEY";
+    private static final int DEFAULT_ITEM = 1;
+
     private int currentItem = 0;
-    private FragmentManager fm;
-    DrawerLayout drawerLayout;
-    ListView drawerList;
+    private DrawerLayout drawerLayout;
+    private ListView drawerList;
     private ActionBarDrawerToggle drawerToggle;
     private MapFragment mapFragment;
-    public ShelterListFragment listFragment;
+    private ShelterListFragment listFragment;
+
+    private ArrayList<Shelter> shelters;
 
     MyFragmentStatePagerAdapter pagerAdapter;
     ViewPager viewPager;
 
-    JSONBroadcastReceiverManager jsonBroadcastReceiverManager;
+    ShelterManager shelterManager;
     
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.e("Activity---", "onCreate");
         super.onCreate(savedInstanceState);
-        Log.e("Activity---", "breakpoint");
         setContentView(R.layout.activity_main);
 
-        //mapFragment = new MapFragment();
-        if (savedInstanceState == null){
-            listFragment = new ShelterListFragment();
-
-            listFragment.equalsOrNot(this);
-
-        }
-
-        jsonBroadcastReceiverManager = new JSONBroadcastReceiverManager(this);
+        shelterManager = new ShelterManager(this, this);
 
         if (savedInstanceState != null){
             currentItem = savedInstanceState.getInt(CURRENT_ITEM_KEY);
+            listFragment = (ShelterListFragment)getSupportFragmentManager().getFragment(savedInstanceState, LIST_FRAGMENT_KEY);
+            //shelterManager.addReceiver(listFragment);
+            mapFragment = (MapFragment)getSupportFragmentManager().getFragment(savedInstanceState, MAP_FRAGMENT_KEY);
+            //shelterManager.addReceiver(mapFragment);
+        }else{
+            currentItem = DEFAULT_ITEM;
         }
+
 
         pagerAdapter = new MyFragmentStatePagerAdapter(getSupportFragmentManager());
         viewPager = (ViewPager) findViewById(R.id.pager);
         viewPager.setAdapter(pagerAdapter);
 
+        viewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener(){
+            @Override
+            public void onPageSelected(int position) {
+                getSupportActionBar().setSelectedNavigationItem(position);
+            }
+        });
+
         drawerList = (ListView)findViewById(R.id.left_drawer);
         drawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
         drawerList.setAdapter(new ArrayAdapter(this, R.layout.drawer_list_item, LIST_OF_ITEMS));
 
-        /*fm = getSupportFragmentManager();
-        mapFragment = (MapFragment)fm.findFragmentById(R.id.content_frame);
-
-        final ShelterListFragment listFragment = new ShelterListFragment();
-
-        if (mapFragment == null){
-            mapFragment = MapFragment.newInstance();
-            fm.beginTransaction().add(R.id.content_frame, listFragment).commit();
-        }
-*/
-
-        //jsonBroadcastReceiverManager.addReceiver(mapFragment);
-        jsonBroadcastReceiverManager.addReceiver(listFragment);
-        Log.e("Activity---:", "OnCreate-List.Activity null?" + (listFragment.activity == null));
-        jsonBroadcastReceiverManager.registerJSONBroadcastReceiver();
-        new ShelterSourceSelector(this).selectShelterSource(ShelterSourceSelector.ShelterID.SHOW_TAIPEI).fetchFromSource();
-
-        setActionBarTitle(LIST_OF_ITEMS[currentItem] + " view");
+        //shelterManager.registerJSONBroadcastReceiver();
+        shelterManager.connect();
 
         drawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 currentItem = position;
                 String item = (String) parent.getAdapter().getItem(position);
+                int sourceID = 0;
                 if (item.equals("Taipei")) {
-                    new ShelterSourceSelector(MainActivity.this).selectShelterSource(ShelterSourceSelector.ShelterID.SHOW_TAIPEI).fetchFromSource();
-                    //mapFragment.fetchShelterAndDisplay(MapFragment.SHOW_TAIPEI);
-                    //listFragment.fetchShelterAndDisplay(ShelterListFragment.SHOW_TAIPEI);
+                    sourceID = ShelterSourceSelector.ShelterID.SHOW_TAIPEI;
                 } else if (item.equals("Hsinchu")) {
-                    new ShelterSourceSelector(MainActivity.this).selectShelterSource(ShelterSourceSelector.ShelterID.SHOW_HSINCHU).fetchFromSource();
-                    // mapFragment.fetchShelterAndDisplay(MapFragment.SHOW_HSINCHU);
-                    //listFragment.fetchShelterAndDisplay(ShelterListFragment.SHOW_HSINCHU);
+                    sourceID = ShelterSourceSelector.ShelterID.SHOW_HSINCHU;
                 } else if (item.equals("New Taipei")) {
-                    new ShelterSourceSelector(MainActivity.this).selectShelterSource(ShelterSourceSelector.ShelterID.SHOW_NEW_TAIPEI).fetchFromSource();
-                    //mapFragment.fetchShelterAndDisplay(MapFragment.SHOW_NEW_TAIPEI);
-                    //listFragment.fetchShelterAndDisplay(ShelterListFragment.SHOW_NEW_TAIPEI);
+                    sourceID = ShelterSourceSelector.ShelterID.SHOW_NEW_TAIPEI;
                 }
+                new ShelterSourceSelector(MainActivity.this).selectShelterSource(sourceID).fetchFromSource();
+                setActionBarTitle(LIST_OF_ITEMS[currentItem]);
                 drawerList.setItemChecked(position, true);
                 drawerLayout.closeDrawers();
             }
         });
+
 
         drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.drawer_open, R.string.drawer_close) {
 
             /** Called when a drawer has settled in a completely closed state. */
             public void onDrawerClosed(View view) {
                 super.onDrawerClosed(view);
-                setActionBarTitle(LIST_OF_ITEMS[currentItem] + " view");
                 invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
             }
 
@@ -181,6 +176,8 @@ public class  MainActivity extends ActionBarActivity {
     public void onSaveInstanceState(Bundle outState){
         super.onSaveInstanceState(outState);
         outState.putInt(CURRENT_ITEM_KEY, currentItem);
+        getSupportFragmentManager().putFragment(outState, LIST_FRAGMENT_KEY, listFragment);
+        getSupportFragmentManager().putFragment(outState, MAP_FRAGMENT_KEY, mapFragment);
     }
 
 
@@ -224,28 +221,49 @@ public class  MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onShelterReceive(ArrayList<Shelter> shelters) {
+        this.shelters = shelters;
+        mapFragment.setAndUpdateShelters(shelters);
+        listFragment.setAndUpdateShelters(shelters);
+    }
+
+    @Override
+    public void onLocationChanged(GeoPoint userLocation) {
+        if (shelters != null){
+            for (Shelter shelter : shelters){
+                shelter.calculateDistance(userLocation);
+                Log.e("sheltertag", "distance:" + shelter.distance + "m");
+            }
+        }
+        mapFragment.setAndUpdateShelters(shelters);
+        listFragment.setAndUpdateShelters(shelters);
+    }
 
     private class MyFragmentStatePagerAdapter extends FragmentStatePagerAdapter{
-        private Fragment fragmentMaps, fragmentList;
         public MyFragmentStatePagerAdapter(FragmentManager fm){
             super(fm);
         }
 
         @Override
         public Fragment getItem(int position) {
+            Log.e("Activity ---", "getItem called");
             switch (position) {
                 case 0:
-                    fragmentList =listFragment;
-                    return fragmentList;
-                default:
-                    fragmentMaps = mapFragment;
-                    return fragmentMaps;
+                    mapFragment = new MapFragment();
+                    //shelterManager.addReceiver(mapFragment);
+                    return mapFragment;
+                case 1:
+                    listFragment = new ShelterListFragment();
+                    //shelterManager.addReceiver(listFragment);
+                    return listFragment;
+                default: return null;
             }
         }
 
         @Override
         public int getCount() {
-            return 1;
+            return 2;
         }
 
         @Override
@@ -275,21 +293,29 @@ public class  MainActivity extends ActionBarActivity {
     @Override
     protected void onResume() {
         Log.e("Activity---", "onResume");
-        Log.e("Activity---:", "OnResume-List.Activity null?"+(listFragment.activity == null));
         super.onResume();
     }
 
     @Override
     protected void onStart() {
         Log.e("Activity---", "onStart");
-        Log.e("Activity---:", "OnStart-List.Activity null?"+(listFragment.activity == null));
         super.onStart();
+        //shelterManager.registerJSONBroadcastReceiver();
+        shelterManager.connect();
+
+        drawerList.performItemClick(
+                drawerList.getAdapter().getView(currentItem, null, null),
+                currentItem,
+                drawerList.getAdapter().getItemId(currentItem));
     }
 
     public void onStop(){
         Log.e("Activity---", "onStop");
         super.onStop();
 
-        jsonBroadcastReceiverManager.unregisterJSONBroadcastReceiver();
+        //shelterManager.unregisterJSONBroadcastReceiver();
+        shelterManager.disconnect();
     }
+
+
 }

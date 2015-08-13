@@ -1,21 +1,16 @@
 package com.mad.openisdm.madnew.app;
 
-import android.util.Log;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 
 /**
- * Created by Paul on 2015/7/15.
+ * A class that provides static method for reading JSON files (in  plain text format) from a URL
  */
 public class JsonReader {
     private static String readAll(Reader rd) throws IOException {
@@ -27,6 +22,7 @@ public class JsonReader {
         return sb.toString();
     }
 
+    /**Read a (JSON) file from the given URL, and returns the file in plain text*/
     public static String readJsonFromUrl(String url) throws IOException{
         InputStream is = new URL(url).openStream();
         try {

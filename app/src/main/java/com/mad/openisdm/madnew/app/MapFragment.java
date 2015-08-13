@@ -1,4 +1,4 @@
-/*This fragment handles a map UI.
+/**This fragment handles a map UI. Activity that hosts this fragment must implement the interface: OnLocationChangedListener
 * The map UI is implemented using OSMDroid's map view. ODMDroid's MapView class permits offline-viewing, nevertheless, other
 * functionality such as routing(navigation) requires wireless access.
 *
@@ -7,30 +7,33 @@
 *
 * When this fragment first creates, the map uses the GPS system to locate the current user location, and display such on the map.
 * During first launch, when user location is undetectable(GPS is weak when used indoor), the default location is determined by the constant DEFAULT_USER_LOCATION, which
-* is currently set to (somewhere in) Taipei. After launching, user location is updated periodically(when user location is detectable).
+* is currently set to (somewhere in) Taipei.
 *
-* GEOJSON files are also fetched from server when first launched, developers can choose which GEOJSON files to fetch by passing in
-* corresponding constant parameters into the method fetchShelterAndDisplay(String parameter). This method downloads GEOJSON file from a server.
-* parse it, and display them on the map. During the execution of the fragment, only one GEOJSON file can be shown on the map.
-* In otherwords, if some GEOJSON data are already presented on the UI, calling fetchShelterAndDisplay() with a different parameter
-* will fetch the requested data from the server, and replace the previously fetched data. The current default parameter passed into fetchShelterAndDisplay()
-  * is SHOW_TAIPEI, as a result, when first launched,  shelter information in Taipei is loaded onto the map. Default display item can be changed
-  * by modifying the constant, DEFAULT_SHOW_ITEM
+* To update the map with a list of shelters, call the method updateUIWithShelters.
+*
+* Note: this fragment by itself will not display any shelter information
+* User must first create an instance of ShelterManager and call ShelterManager.connect(), then choose the
+* shelter to display using ShelterSourceSelector.
+*
 * */
 
 
 package com.mad.openisdm.madnew.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -38,6 +41,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -64,20 +68,19 @@ import org.osmdroid.bonuspack.overlays.Polyline;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.BoundingBoxE6;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Overlay;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 
 
-public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver, JSONReceiver {
-    public static final int SHOW_TAIPEI = 0;
-    public static final int SHOW_HSINCHU = 1;
-    public static final int SHOW_NEW_TAIPEI = 2;
-    public static final String SHOW_ITEM_KEY = "item";
+public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver {
+
 
     private static final GeoPoint SOMEWHERE_IN_GERMANY = new GeoPoint(35.5069039, 139.680770);
     private static final GeoPoint SOMEWHERE_IN_TAIWAN = new GeoPoint(22.6369039, 120.260770);
@@ -95,7 +98,6 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     private static final  GeoPoint DEFAULT_MAP_CENTER = SOMEWHERE_IN_TAIWAN;
     private static final GeoPoint DEFAULT_USER_LOCATION = SOMEWHERE_IN_TAIWAN;
     private static final int DEFAULT_ZOOM_LEVEL = 9;
-    private static final int DEFAULT_SHOW_ITEM = SHOW_TAIPEI;
 
     private MapController mapController;
     private Marker userLocationMarker;
@@ -107,19 +109,16 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     private GeoPoint userLocation;
     private Marker pinPointMarker;
     private RadiusMarkerClusterer clusterer;
-    private int showItem;
 
     private Activity activity;
+    private OnLocationChangedListener listener;
     private boolean navigating = false;
     private boolean firstStartUp;
     private boolean recreate;
 
-    public static String jsonStr = null;
-
     private GoogleApiClient googleApiClient;
     private LocationRequest locationRequest;
 
-    private JSONReceiver jsonReceiver;
     private RoadReceiver roadReceiver;
 
     private static boolean MANUAL_LOCATION_DEBUG = true;
@@ -177,15 +176,15 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
                 googleApiClient);
 
         if (lastLocation != null) {
-            Toast.makeText(getActivity(), "Latitude:" + lastLocation.getLatitude()+", Longitude:"+lastLocation.getLongitude(),Toast.LENGTH_SHORT).show();
             if (firstStartUp){
                 GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
                 userLocation = location;
+                DataHolder.userLocation = userLocation;
                 mapCenter = location;
 
                 /*An akward way to test if onCreateView has been called*/
                 if (userLocationMarker != null){
-                    mapController.setCenter(mapCenter);
+                    mapController.animateTo(mapCenter);
                     updateUserLocation(userLocation);
                 }
             }
@@ -212,39 +211,19 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     }
 
 
-    public void fetchShelterAndDisplay(int showItemID){
-        showItem = showItemID;
-        String url;
-        switch (showItemID){
-            case SHOW_TAIPEI:
-                url="http://140.109.17.112:5000/datasets/taipei";
-                break;
-            case SHOW_HSINCHU:
-                url ="http://140.109.17.112:5000/datasets/hsinchu";
-                break;
-            default:
-                url = "http://140.109.17.112:5000/datasets/newtaipei";
-                break;
-        }
-
-        Intent serviceIntent = new Intent(getActivity(), FetchJSONIntentService.class);
-        Log.i("URLTAG", url);
-        serviceIntent.putExtra(FetchJSONIntentService.URL_KEY, url);
-        getActivity().startService(serviceIntent);
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         clusterer = null;
         pinPointMarker = null;
         currentRoadOverlay = null;
         if (savedInstanceState == null){
             firstStartUp = true;
             userLocation = DEFAULT_USER_LOCATION;
+            DataHolder.userLocation = userLocation;
             mapCenter = DEFAULT_MAP_CENTER;
             zoomLevel = DEFAULT_ZOOM_LEVEL;
-            showItem = DEFAULT_SHOW_ITEM;
             currentRoad = null;
             recreate = false;
             navigating = false;
@@ -252,10 +231,10 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             firstStartUp = false;
             userLocation = new GeoPoint(savedInstanceState.getDouble(USER_LOCATION_LATITUDE_KEY),
                     savedInstanceState.getDouble(USER_LOCATION_LONGITUDE_KEY));
+            DataHolder.userLocation = userLocation;
             mapCenter = new GeoPoint(savedInstanceState.getDouble(MAP_CENTER_LATITUDE_KEY),
                     savedInstanceState.getDouble(MAP_CENTER_LONGITUDE_KEY));
             zoomLevel = savedInstanceState.getInt(CURRENT_ZOOM_LEVEL_KEY);
-            showItem = savedInstanceState.getInt(SHOW_ITEM_KEY);
             currentRoad = savedInstanceState.getParcelable(CURRENT_ROAD_KEY);
             recreate = true;
             navigating = savedInstanceState.getBoolean(NAVIGATING_KEY);
@@ -274,15 +253,27 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             googleApiClient.connect();
         }
 
-       /* IntentFilter filter1 = new IntentFilter(JSONReceiver.RECEIVE_JSON_ACTION);
-        filter1.addCategory(Intent.CATEGORY_DEFAULT);
-        jsonReceiver = new JSONReceiver();
-        getActivity().registerReceiver(jsonReceiver, filter1);*/
-
-        IntentFilter filter2= new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
-        filter2.addCategory(Intent.CATEGORY_DEFAULT);
+        IntentFilter filter= new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
+        filter.addCategory(Intent.CATEGORY_DEFAULT);
         roadReceiver = new RoadReceiver();
-        getActivity().registerReceiver(roadReceiver, filter2);
+        getActivity().registerReceiver(roadReceiver, filter);
+
+
+        LocationManager service = (LocationManager) getActivity().getSystemService(getActivity().LOCATION_SERVICE);
+        boolean enabled = service.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+        // Check if enabled and if not send user to the GPS settings
+        if (!enabled) {
+            new AlertDialog.Builder(getActivity()).setTitle("GPS Disabled!").setMessage("Please enable location service").setPositiveButton("Ok",
+                    new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                            startActivity(intent);
+                        }
+                    }).show();
+        }
+
     }
 
     @Override
@@ -290,6 +281,29 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
                              Bundle savedInstanceState) {
 
         View root = inflater.inflate(R.layout.fragment_map, container, false);
+
+        ImageButton findLocation = (ImageButton)root.findViewById(R.id.fab_image_button);
+        findLocation.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                        googleApiClient);
+
+                if (lastLocation != null){
+                    GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
+                    mapCenter = location;
+                    updateUserLocation(location);
+                    DataHolder.userLocation = location;
+                    listener.onLocationChanged(location);
+                    mapController.animateTo(mapCenter);
+                    clearRoad();
+                    clearInfoWindow();
+                }else{
+                    Toast.makeText(getActivity(), "Unable to find location. Try again later", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
         map = (MapView)root.findViewById(R.id.mapview);
         mapController = (MapController)map.getController();
         map.setTileSource(TileSourceFactory.MAPNIK);
@@ -307,13 +321,10 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         userLocationMarker.setPosition(userLocation);
         userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         userLocationMarker.setInfoWindow(new SetLocationInfoWindow(map, userLocationMarker));
-        Drawable userIcon = getResources().getDrawable(R.drawable.masculineavatar32);
+        Drawable userIcon = getResources().getDrawable(R.drawable.user_marker);
         userLocationMarker.setIcon(userIcon);
 
         map.getOverlays().add(userLocationMarker);
-
-        //fetchShelterAndDisplay(showItem);
-
 
         return root;
     }
@@ -361,37 +372,41 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         this.activity = activity;
-        Log.e("onAttach", "activity == null?" + (activity == null));
+        try {
+            this.listener = (OnLocationChangedListener)activity;
+        }catch(ClassCastException e){
+            Log.e("ClassCastException", "Hosting activity must implement onLocationChangedListener");
+        }
     }
 
-    private RadiusMarkerClusterer buildClustererFromJSONObject(JSONObject dataset) throws JSONException{
-        Log.e("buildClustere", "activity == null?" + (activity == null));
+    private RadiusMarkerClusterer buildClustererFromShelters(ArrayList<Shelter> shelters){
         RadiusMarkerClusterer newClusterer = new RadiusMarkerClusterer(activity);
-        JSONArray array = dataset.getJSONArray("features");
-        for (int i =0; i<array.length(); i++){
-            Double latitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
-            Double longitude = array.getJSONObject(i).getJSONObject("geometry").getJSONArray("coordinates").getDouble(0);
-
+        for (Shelter shelter: shelters){
             Marker newMarker = new Marker(map);
-            newMarker.setPosition(new GeoPoint(latitude, longitude));
-            Drawable shelterIcon = getResources().getDrawable(R.drawable.position_mark_32);
+            newMarker.setPosition(shelter.getPosition());
+
+            Drawable shelterIcon;
+            if (shelter.distance <= 1000){
+                shelterIcon = getResources().getDrawable(R.drawable.green_marker);
+            }else if (shelter.distance > 1000 && shelter.distance <= 3000){
+                shelterIcon = getResources().getDrawable(R.drawable.orange_marker);
+            }else if (shelter.distance > 3000 && shelter.distance <= 10000){
+                shelterIcon = getResources().getDrawable(R.drawable.pink_marker);
+            }else{
+                shelterIcon = getResources().getDrawable(R.drawable.red_marker);
+            }
             newMarker.setIcon(shelterIcon);
             NavigateInfoWindow infoWindow = new NavigateInfoWindow(map, newMarker);
-
-            Iterator<String> keys = array.getJSONObject(i).getJSONObject("properties").keys();
-            while (keys.hasNext()){
-                String key = keys.next();
-                String value = array.getJSONObject(i).getJSONObject("properties").getString(key);
-                infoWindow.addProperty(key, value);
+            HashMap<String, String> properties = shelter.getProperties();
+            for (String key:properties.keySet()) {
+                infoWindow.addProperty(key, properties.get(key));
             }
-
-            //String name = array.getJSONObject(i).getJSONObject("properties").getString("Park_Name");
-
             newMarker.setInfoWindow(infoWindow);
             newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            newMarker.setTitle("omg " + i%8 + "+" + i%5 + "="  + (i%4-2)*2);
+            newClusterer.setMaxClusteringZoomLevel(14);
             newClusterer.add(newMarker);
         }
+
 
         Drawable clusterIconD = getResources().getDrawable(R.drawable.marker_cluster);
         Bitmap clusterIcon = ((BitmapDrawable)clusterIconD).getBitmap();
@@ -401,10 +416,8 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     }
 
     public void
-    updateUIWithJSON(JSONObject dataset) throws JSONException{
-        updateClusterer(buildClustererFromJSONObject(dataset));
-        //clearRoad();
-        //clearInfoWindow();
+    updateUIWithShelters(ArrayList<Shelter> shelters){
+        updateClusterer(buildClustererFromShelters(shelters));
     }
 
     public void clearClusterer(){
@@ -418,6 +431,8 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         if (currentRoadOverlay != null){
             removeOverlay(currentRoadOverlay);
             currentRoadOverlay = null;
+            currentRoad = null;
+            navigating = false;
         }
     }
 
@@ -432,9 +447,9 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         InfoWindow.closeAllInfoWindowsOn(map);
     }
 
-    @Override
-    public void handleJSON(JSONObject jsonObject) throws JSONException{
-        updateUIWithJSON(jsonObject);
+
+    public void setAndUpdateShelters(ArrayList<Shelter> shelters){
+        updateUIWithShelters(shelters);
         if (recreate){
             if (navigating){
                 updateUIWithRoad(currentRoad);
@@ -469,20 +484,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             naviBtn.setText("Navigate");
             naviBtn.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
-                    //if (!navigating) {
-                        fetchRoadAndDisplay(userLocation, marker.getPosition());
-                        /*navigating = true;
-                        btn.setText("Cancel Navi");*/
-                    //} else {
-                        /*Log.i("NAVITAG", "currentRoadOverlay null?" + (currentRoadOverlay == null));
-                        if(currentRoadOverlay != null){
-                            removeOverlay(currentRoadOverlay);
-                            currentRoadOverlay = null;
-                            map.invalidate();
-                            navigating = false;
-                            btn.setText("Navigate");
-                        }*/
-                    //}
+                    fetchRoadAndDisplay(userLocation, marker.getPosition());
                 }
             });
 
@@ -519,6 +521,8 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
                         if (!userLocation.equals(marker.getPosition())){
                             Toast.makeText(view.getContext(), "setting location...", Toast.LENGTH_SHORT).show();
                             updateUserLocation(marker.getPosition());
+                            DataHolder.userLocation = userLocation;
+                            listener.onLocationChanged(userLocation);
                             removeOverlay(marker);
                             pinPointMarker = null;
                         }
@@ -543,11 +547,6 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         }
     }
 
-    private void updateUserLocation(double latitude, double longitude){
-        userLocation = new GeoPoint(latitude, longitude);
-        userLocationMarker.setPosition(userLocation);
-        map.invalidate();
-    }
 
     private void updateUserLocation(GeoPoint location){
         userLocation = location;
@@ -562,7 +561,6 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         saveInstanceState.putInt(CURRENT_ZOOM_LEVEL_KEY, map.getZoomLevel());
         saveInstanceState.putDouble(USER_LOCATION_LATITUDE_KEY, userLocation.getLatitude());
         saveInstanceState.putDouble(USER_LOCATION_LONGITUDE_KEY, userLocation.getLongitude());
-        saveInstanceState.putInt(SHOW_ITEM_KEY, showItem);
         saveInstanceState.putBoolean(NAVIGATING_KEY, navigating);
         saveInstanceState.putParcelable(CURRENT_ROAD_KEY, currentRoad);
 
@@ -571,22 +569,11 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     @Override
     public void onLocationChanged(Location location) {
 
-        String msg = "New Latitude: " + location.getLatitude()
-                + "New Longitude: " + location.getLongitude();
-
-
-        Toast.makeText(getActivity(), msg, Toast.LENGTH_SHORT).show();
-        updateUserLocation(location.getLatitude(), location.getLongitude());
-        if (navigating){
-            fetchRoadAndDisplay(userLocation, new GeoPoint(location.getLatitude(), location.getLongitude()));
-        }
-}
+    }
 
 
     @Override
     public boolean singleTapConfirmedHelper(GeoPoint p) {
-        navigating = false;
-        currentRoad = null;
         clearInfoWindow();
         clearPinpoint();
         clearRoad();
@@ -600,14 +587,13 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     }
 
     @Override public boolean longPressHelper(GeoPoint p) {
-
         clearRoad();
 
         Marker newPinPoint = new Marker(map);
         newPinPoint.setPosition(p);
         newPinPoint.setInfoWindow(new SetLocationInfoWindow(map, newPinPoint));
         newPinPoint.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-        Drawable pinpointIcon = getResources().getDrawable(R.drawable.spyhole_32);
+        Drawable pinpointIcon = getResources().getDrawable(R.drawable.pinpoint);
         newPinPoint.setIcon(pinpointIcon);
         updatePinPoint(newPinPoint);
         return true;
@@ -629,7 +615,6 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         }
 
         getActivity().unregisterReceiver(roadReceiver);
-       /* getActivity().unregisterReceiver(jsonReceiver);*/
     }
 
 
@@ -641,46 +626,6 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         serviceIntent.putExtra(FetchRoadIntentService.END_POINT_LONG, endPoint.getLongitude());
         getActivity().startService(serviceIntent);
     }
-
-    /*public class JSONReceiver extends BroadcastReceiver{
-        public static final String RECEIVE_JSON_ACTION = "com.mad.openisdm.madnew.JSONReceive";
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            JSONObject jsonObject = null;
-            String jsonText = intent.getStringExtra(FetchJSONIntentService.JSON_OBJECT_KEY);
-            boolean exception = intent.getBooleanExtra(FetchJSONIntentService.EXCEPTION_KEY, false);
-            if (exception){
-                Toast.makeText(context, "MapFrag-IO ERROR", Toast.LENGTH_SHORT).show();
-                Log.i("IOTAG", "IO ERROR");
-            }else{
-                try {
-                    jsonObject = new JSONObject(jsonStr);
-                }catch (JSONException e){
-                    Toast.makeText(context, "PARSE ERROR", Toast.LENGTH_SHORT).show();
-                    Log.i("JSONTAG", "PARSE ERROR-CHECK JSON SYNTAX");
-                }
-                Log.i("JSONTAG", ""+(jsonObject == null));
-                if (jsonObject != null) {
-                    try {
-                        updateUIWithJSON(jsonObject);
-                        if (recreate){
-                            if (navigating){
-                                updateUIWithRoad(currentRoad);
-                            }
-                            recreate = false;
-                        }else{
-                            clearInfoWindow();
-                            clearRoad();
-                        }
-                    } catch (JSONException e) {
-                        Log.i("JSONTAG", "Dataset doesn't follow GEOJSON format");
-                        Toast.makeText(map.getContext(), "GEOJSON format error", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-        }
-    }*/
 
     public class RoadReceiver extends BroadcastReceiver{
         public static final String RECEIVE_ROAD_ACTION ="com.mad.openisdm.madnew.MapFragment.roadReceive";

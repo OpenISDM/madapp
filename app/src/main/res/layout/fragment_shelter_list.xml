@@ -6,6 +6,7 @@
     <ListView
         android:id="@+id/fragment_shelter_listView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"></ListView>
+        android:layout_height="match_parent"
+        android:background="@drawable/shelter_list_item_bg"></ListView>
 
 </FrameLayout>
