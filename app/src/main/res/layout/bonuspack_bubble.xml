@@ -3,7 +3,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:background="@drawable/bonuspack_bubble" >
+    android:background="@drawable/bonuspack_bubble1" >
     <ImageView android:id="@+id/bubble_image"
         android:layout_width="65dp"
         android:layout_height="65dp"
@@ -24,7 +24,14 @@
                 android:maxEms="17"
                 android:layout_weight="1"
                 android:text="Title"
-                android:textSize="15sp" />
+                android:textSize="15sp"
+                android:visibility="gone"/>
+            <Button android:id="@+id/bubble_close"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:singleLine="false"
+                android:textSize="15sp"
+                android:text="close"/>
             <Button android:id="@+id/bubble_btn"
 
                 android:layout_width="wrap_content"

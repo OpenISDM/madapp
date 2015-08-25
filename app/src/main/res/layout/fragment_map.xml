@@ -1,4 +1,4 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
@@ -7,4 +7,14 @@
         android:layout_height="fill_parent"
         android:id="@+id/mapview">
     </org.osmdroid.views.MapView>
-</LinearLayout>
+    <ImageButton
+        android:id="@+id/fab_image_button"
+        android:layout_width="@dimen/fab_button_diameter"
+        android:layout_height="@dimen/fab_button_diameter"
+        android:layout_marginBottom="@dimen/fab_button_margin_bottom"
+        android:layout_marginRight="@dimen/fab_button_margin_right"
+        android:layout_gravity="bottom|end"
+        android:background="@drawable/fab_shape"
+        android:src="@drawable/gps"
+        />
+</FrameLayout>

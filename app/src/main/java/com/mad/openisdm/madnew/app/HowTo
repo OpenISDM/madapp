@@ -1,0 +1,24 @@
+This package contains the necessary components to fetch GeoJSON files containing shelter information from a particular server,
+and display them in different formats. Current implementation provides two views. A map view and a list view. User only
+needs to host the fragments, MapFragment and ShelterListFragment, in their activity to obtain the corresponding views.
+User can host one fragment, or multiple of them.
+
+The fragments are only responsible for providing the basic view layout. Without fetching the GEOJSON files,
+they will show no shelter information.
+
+MapFragment's constructor requires an implementation of the interface OnLocationChangedListener. In the implementation,
+onLocationChanged will be called whenever the user location changes in MapFragment. You can do anything in onLocationChanged, a
+common implementation is to recalculate the distance between each shelter and the new user location, then call MapFragment.setAndUpdateShelters.
+
+Before fetching the files,  user needs to create an instance of ShelterManager in the hosting activity(probably in onCreate),
+and call ShelterManager.connect (Probably in onStart). ShelterManager's constructor requires an implementation of
+the interface Shelter.OnShelterReceiverListener. In the implementation, onShelterReceived will be called whenever
+JSON files are downloaded (via ShelterSourceSelector.SelectShelterSource and ShelterSourceSelector.fetchFromSource).
+You can do anything in onShelterReceived, one common practice is to display the received shelters on the MapFragment by calling
+MapFragment.updateUIWithShelters.
+
+When the hosting activity fades into background, user may wish to call ShelterManager.disconnect() to save memory (preferably in onStop()).
+
+
+
+You can study a simple example in the f
