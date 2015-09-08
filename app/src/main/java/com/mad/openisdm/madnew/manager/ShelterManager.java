@@ -1,4 +1,4 @@
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew.manager;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -6,6 +6,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.mad.openisdm.madnew.model.DataHolder;
+import com.mad.openisdm.madnew.service.FetchJSONIntentService;
+import com.mad.openisdm.madnew.model.Shelter;
 
 import org.json.JSONException;
 import org.json.JSONObject;

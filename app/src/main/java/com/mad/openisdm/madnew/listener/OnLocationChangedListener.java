@@ -1,4 +1,4 @@
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew.listener;
 
 import org.osmdroid.util.GeoPoint;
 

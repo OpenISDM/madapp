@@ -8,7 +8,7 @@
 *
 * */
 
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -20,7 +20,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import com.mad.openisdm.madnew.R;
+import com.mad.openisdm.madnew.model.Shelter;
+
 import java.util.ArrayList;
 
 

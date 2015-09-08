@@ -1,7 +1,11 @@
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew.service;
 
 import android.app.IntentService;
 import android.content.Intent;
+
+import com.mad.openisdm.madnew.model.DataHolder;
+import com.mad.openisdm.madnew.util.JsonReader;
+import com.mad.openisdm.madnew.manager.ShelterManager;
 
 /**
  * This class is an intent service(a worker thread) that downloads JSON file (in plain text format) and store it

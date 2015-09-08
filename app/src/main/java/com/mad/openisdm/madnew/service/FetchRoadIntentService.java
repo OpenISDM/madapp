@@ -1,7 +1,9 @@
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew.service;
 
 import android.app.IntentService;
 import android.content.Intent;
+
+import com.mad.openisdm.madnew.MapFragment;
 
 import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
