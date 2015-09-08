@@ -50,9 +50,13 @@ import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResult;
 import com.mad.openisdm.madnew.R;
 
 import org.json.JSONArray;
@@ -79,7 +83,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 
-public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver {
+public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver, ResultCallback<LocationSettingsResult> {
 
 
     private static final GeoPoint SOMEWHERE_IN_GERMANY = new GeoPoint(35.5069039, 139.680770);
@@ -123,7 +127,14 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
 
     private static boolean MANUAL_LOCATION_DEBUG = true;
 
-    private boolean checkGooglePlayServices(){
+    /**
+     * Check location settings
+     */
+    protected LocationSettingsRequest mLocationSettingsRequest;
+
+
+
+    private boolean checkGooglePlayServices() {
         int checkGooglePlayServices = GooglePlayServicesUtil
                 .isGooglePlayServicesAvailable(getActivity());
         if (checkGooglePlayServices != ConnectionResult.SUCCESS) {
@@ -157,6 +168,22 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         locationRequest.setInterval(20000);
         locationRequest.setFastestInterval(5000);
         locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+    }
+
+    protected void buildLocationSettingsRequest() {
+        mLocationSettingsRequest = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest)
+                .build();
+    }
+
+    protected void checkLocationSettings() {
+        PendingResult<LocationSettingsResult> result =
+                LocationServices.SettingsApi.checkLocationSettings(
+                        googleApiClient,
+                        mLocationSettingsRequest
+                );
+
+        result.setResultCallback(this);
     }
 
     protected void startLocationUpdates() {
@@ -243,6 +270,8 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         if (checkGooglePlayServices()) {
             buildGoogleApiClient();
             createLocationRequest();
+            buildLocationSettingsRequest();
+            checkLocationSettings();
         }
     }
 
@@ -442,6 +471,11 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             clearInfoWindow();
             clearRoad();
         }
+    }
+
+    @Override
+    public void onResult(LocationSettingsResult locationSettingsResult) {
+
     }
 
     private class NavigateInfoWindow extends MarkerInfoWindow {
