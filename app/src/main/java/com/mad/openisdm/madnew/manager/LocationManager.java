@@ -133,7 +133,7 @@ public class LocationManager implements
                 mGoogleApiClient);
 
         if (mConnectedCallback != null) {
-            mConnectedCallback.onConnectedCallback();g
+            mConnectedCallback.onConnectedCallback();
         }
 
         startLocationUpdates();
