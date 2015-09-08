@@ -18,22 +18,18 @@
 * */
 
 
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -57,11 +53,11 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
-import com.mad.openisdm.madnew.R;
+import com.mad.openisdm.madnew.model.DataHolder;
+import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
+import com.mad.openisdm.madnew.model.Shelter;
+import com.mad.openisdm.madnew.service.FetchRoadIntentService;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer;
 import org.osmdroid.bonuspack.overlays.InfoWindow;
 import org.osmdroid.bonuspack.overlays.MapEventsOverlay;
@@ -72,7 +68,6 @@ import org.osmdroid.bonuspack.overlays.Polyline;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
-import org.osmdroid.util.BoundingBoxE6;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.MapView;
@@ -80,7 +75,6 @@ import org.osmdroid.views.overlay.Overlay;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 
 
 public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver, ResultCallback<LocationSettingsResult> {

@@ -1,4 +1,4 @@
-package com.mad.openisdm.madnew.main;
+package com.mad.openisdm.madnew;
 
 import android.content.res.Configuration;
 import android.support.v4.app.Fragment;
@@ -19,13 +19,10 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import com.mad.openisdm.madnew.R;
-import com.mad.openisdm.madnew.app.OnLocationChangedListener;
-import com.mad.openisdm.madnew.app.Shelter;
-import com.mad.openisdm.madnew.app.ShelterManager;
-import com.mad.openisdm.madnew.app.MapFragment;
-import com.mad.openisdm.madnew.app.ShelterListFragment;
-import com.mad.openisdm.madnew.app.ShelterSourceSelector;
+import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
+import com.mad.openisdm.madnew.model.Shelter;
+import com.mad.openisdm.madnew.manager.ShelterManager;
+import com.mad.openisdm.madnew.model.ShelterSourceSelector;
 
 import org.osmdroid.util.GeoPoint;
 

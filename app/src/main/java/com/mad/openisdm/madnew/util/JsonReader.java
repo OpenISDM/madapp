@@ -1,4 +1,4 @@
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew.util;
 
 
 import java.io.BufferedReader;

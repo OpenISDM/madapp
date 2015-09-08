@@ -1,4 +1,4 @@
-package com.mad.openisdm.madnew.main;
+package com.mad.openisdm.madnew;
 /**
  * Copyright (c) 2014  OpenISDM
  *

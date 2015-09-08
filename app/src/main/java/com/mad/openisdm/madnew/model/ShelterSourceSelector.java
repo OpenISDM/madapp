@@ -1,8 +1,10 @@
-package com.mad.openisdm.madnew.app;
+package com.mad.openisdm.madnew.model;
 
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+
+import com.mad.openisdm.madnew.service.FetchJSONIntentService;
 
 import java.util.HashMap;
 
