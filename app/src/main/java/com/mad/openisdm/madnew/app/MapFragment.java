@@ -156,7 +156,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         locationRequest = new LocationRequest();
         locationRequest.setInterval(20000);
         locationRequest.setFastestInterval(5000);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
     }
 
     protected void startLocationUpdates() {
@@ -257,23 +257,6 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         filter.addCategory(Intent.CATEGORY_DEFAULT);
         roadReceiver = new RoadReceiver();
         getActivity().registerReceiver(roadReceiver, filter);
-
-
-        LocationManager service = (LocationManager) getActivity().getSystemService(getActivity().LOCATION_SERVICE);
-        boolean enabled = service.isProviderEnabled(LocationManager.GPS_PROVIDER);
-
-        // Check if enabled and if not send user to the GPS settings
-        if (!enabled) {
-            new AlertDialog.Builder(getActivity()).setTitle("GPS Disabled!").setMessage("Please enable location service").setPositiveButton("Ok",
-                    new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                            startActivity(intent);
-                        }
-                    }).show();
-        }
-
     }
 
     @Override
