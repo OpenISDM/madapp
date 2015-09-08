@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.mad.openisdm.madnew.listener.OnShelterReceiveListener;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.service.FetchJSONIntentService;
 import com.mad.openisdm.madnew.model.Shelter;
@@ -24,12 +25,12 @@ import java.util.ArrayList;
  * callback method in Shelter.OnShelterReceiveListener will then be called. See MainActivity for example.
  * */
 public class ShelterManager {
-    private Shelter.OnShelterReceiveListener listener;
+    private OnShelterReceiveListener listener;
     private Context context;
     private JSONBroadcastReceiver jsonBroadcastReceiver;
 
     /**Constructor takes a Context parameter(your hosting activity), and an implementation of OnShelterReceiveListener*/
-    public ShelterManager(Context context, Shelter.OnShelterReceiveListener listener){
+    public ShelterManager(Context context, OnShelterReceiveListener listener){
         super();
         jsonBroadcastReceiver = new JSONBroadcastReceiver();
         this.listener = listener;

@@ -20,6 +20,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
+import com.mad.openisdm.madnew.listener.OnShelterReceiveListener;
 import com.mad.openisdm.madnew.model.Shelter;
 import com.mad.openisdm.madnew.manager.ShelterManager;
 import com.mad.openisdm.madnew.model.ShelterSourceSelector;
@@ -30,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 
-public class  MainActivity extends ActionBarActivity implements Shelter.OnShelterReceiveListener, OnLocationChangedListener {
+public class  MainActivity extends ActionBarActivity implements OnShelterReceiveListener, OnLocationChangedListener {
     private static final String CURRENT_ITEM_KEY = "current item key";
     private static final String[] LIST_OF_ITEMS = {"Taipei", "Hsinchu", "New Taipei"};
     private static final String LIST_FRAGMENT_KEY = "LIST_FRAGMENT_KEY";

@@ -57,10 +57,4 @@ public class Shelter {
     }
 
 
-    public interface OnShelterReceiveListener{
-        /**A callback method when Shelters are received(after fetching from shelter source),
-        * the list of Shelter received is passed as arguments*/
-        public abstract void onShelterReceive(ArrayList<Shelter> shelters);
-    }
-
 }
