@@ -41,18 +41,11 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.internal.LocationRequestInternal;
+import com.mad.openisdm.madnew.manager.LocationManager;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
 import com.mad.openisdm.madnew.model.Shelter;
@@ -77,7 +70,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 
-public class MapFragment extends Fragment implements ConnectionCallbacks, OnConnectionFailedListener, LocationListener, MapEventsReceiver, ResultCallback<LocationSettingsResult> {
+public class MapFragment extends Fragment implements MapEventsReceiver, LocationManager.ConnectedCallback {
 
 
     private static final GeoPoint SOMEWHERE_IN_GERMANY = new GeoPoint(35.5069039, 139.680770);
@@ -91,8 +84,6 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     private static final String CURRENT_ROAD_KEY = "current road key";
     private static final String NAVIGATING_KEY = "navigating";
 
-    private static int REQUEST_CODE_RECOVER_PLAY_SERVICES = 200;
-
     private static final  GeoPoint DEFAULT_MAP_CENTER = SOMEWHERE_IN_TAIWAN;
     private static final GeoPoint DEFAULT_USER_LOCATION = SOMEWHERE_IN_TAIWAN;
     private static final int DEFAULT_ZOOM_LEVEL = 9;
@@ -103,125 +94,27 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     private Polyline currentRoadOverlay;
     private Road currentRoad;
     private int zoomLevel;
-    private GeoPoint mapCenter;
-    private GeoPoint userLocation;
     private Marker pinPointMarker;
     private RadiusMarkerClusterer clusterer;
 
     private Activity activity;
     private OnLocationChangedListener listener;
     private boolean navigating = false;
-    private boolean firstStartUp;
     private boolean recreate;
 
-    private GoogleApiClient googleApiClient;
-    private LocationRequest locationRequest;
+    private LocationManager mLocationManager;
 
     private RoadReceiver roadReceiver;
 
     private static boolean MANUAL_LOCATION_DEBUG = true;
+    private boolean firstStartUp;
+    private GeoPoint mUserLocation;
+    private GeoPoint mMapCenter;
 
     /**
      * Check location settings
      */
     protected LocationSettingsRequest mLocationSettingsRequest;
-
-
-
-    private boolean checkGooglePlayServices() {
-        int checkGooglePlayServices = GooglePlayServicesUtil
-                .isGooglePlayServicesAvailable(getActivity());
-        if (checkGooglePlayServices != ConnectionResult.SUCCESS) {
-		/*
-		* Google Play Services is missing or update is required
-		*  return code could be
-		* SUCCESS,
-		* SERVICE_MISSING, SERVICE_VERSION_UPDATE_REQUIRED,
-		* SERVICE_DISABLED, SERVICE_INVALID.
-		*/
-            GooglePlayServicesUtil.getErrorDialog(checkGooglePlayServices,
-                    (Activity)getActivity(), REQUEST_CODE_RECOVER_PLAY_SERVICES).show();
-
-            return false;
-        }
-
-        return true;
-    }
-
-
-    protected synchronized void buildGoogleApiClient() {
-        googleApiClient = new GoogleApiClient.Builder(getActivity())
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-    }
-
-    protected void createLocationRequest() {
-        locationRequest = new LocationRequest();
-        locationRequest.setInterval(20000);
-        locationRequest.setFastestInterval(5000);
-        locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-    }
-
-    protected void buildLocationSettingsRequest() {
-        mLocationSettingsRequest = new LocationSettingsRequest.Builder()
-                .addLocationRequest(locationRequest)
-                .build();
-    }
-
-    protected void checkLocationSettings() {
-        PendingResult<LocationSettingsResult> result =
-                LocationServices.SettingsApi.checkLocationSettings(
-                        googleApiClient,
-                        mLocationSettingsRequest
-                );
-
-        result.setResultCallback(this);
-    }
-
-    protected void startLocationUpdates() {
-        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
-    }
-
-    protected void stopLocationUpdates() {
-        if (googleApiClient != null) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(
-                    googleApiClient, this);
-        }
-    }
-
-    @Override
-    public void onConnected(Bundle bundle) {
-        Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                googleApiClient);
-
-        if (lastLocation != null) {
-            if (firstStartUp){
-                GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
-                userLocation = location;
-                DataHolder.userLocation = userLocation;
-                mapCenter = location;
-
-                /*An akward way to test if onCreateView has been called*/
-                if (userLocationMarker != null){
-                    mapController.animateTo(mapCenter);
-                    updateUserLocation(userLocation);
-                }
-            }
-        }
-        startLocationUpdates();
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-
-    }
 
     public static MapFragment newInstance() {
         Bundle args = new Bundle();
@@ -239,21 +132,24 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         clusterer = null;
         pinPointMarker = null;
         currentRoadOverlay = null;
+        mLocationManager = new LocationManager(getActivity());
+        mLocationManager.setOnConnectedCallback(this);
+
         if (savedInstanceState == null){
             firstStartUp = true;
-            userLocation = DEFAULT_USER_LOCATION;
-            DataHolder.userLocation = userLocation;
-            mapCenter = DEFAULT_MAP_CENTER;
+            mUserLocation = DEFAULT_USER_LOCATION;
+            DataHolder.userLocation = mUserLocation;
+            mMapCenter = DEFAULT_MAP_CENTER;
             zoomLevel = DEFAULT_ZOOM_LEVEL;
             currentRoad = null;
             recreate = false;
             navigating = false;
         }else{
             firstStartUp = false;
-            userLocation = new GeoPoint(savedInstanceState.getDouble(USER_LOCATION_LATITUDE_KEY),
+            mUserLocation = new GeoPoint(savedInstanceState.getDouble(USER_LOCATION_LATITUDE_KEY),
                     savedInstanceState.getDouble(USER_LOCATION_LONGITUDE_KEY));
-            DataHolder.userLocation = userLocation;
-            mapCenter = new GeoPoint(savedInstanceState.getDouble(MAP_CENTER_LATITUDE_KEY),
+            DataHolder.userLocation = mUserLocation;
+            mMapCenter = new GeoPoint(savedInstanceState.getDouble(MAP_CENTER_LATITUDE_KEY),
                     savedInstanceState.getDouble(MAP_CENTER_LONGITUDE_KEY));
             zoomLevel = savedInstanceState.getInt(CURRENT_ZOOM_LEVEL_KEY);
             currentRoad = savedInstanceState.getParcelable(CURRENT_ROAD_KEY);
@@ -261,20 +157,19 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             navigating = savedInstanceState.getBoolean(NAVIGATING_KEY);
         }
 
-        if (checkGooglePlayServices()) {
-            buildGoogleApiClient();
-            createLocationRequest();
-            buildLocationSettingsRequest();
-            checkLocationSettings();
+        if (mLocationManager.checkGooglePlayServices()) {
+            mLocationManager.buildGoogleApiClient();
+            mLocationManager.createLocationRequest();
+            mLocationManager.buildLocationSettingsRequest();
+            mLocationManager.checkLocationSettings();
         }
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        if (googleApiClient != null) {
-            googleApiClient.connect();
-        }
+
+        mLocationManager.googleApiClientConnect();
 
         IntentFilter filter= new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
         filter.addCategory(Intent.CATEGORY_DEFAULT);
@@ -292,19 +187,18 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         findLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                        googleApiClient);
+                Location lastLocation = mLocationManager.getLastLocation();
 
                 if (lastLocation != null){
                     GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
-                    mapCenter = location;
+                    mMapCenter = location;
                     updateUserLocation(location);
                     DataHolder.userLocation = location;
                     listener.onLocationChanged(location);
-                    mapController.animateTo(mapCenter);
+                    mapController.animateTo(mMapCenter);
                     clearRoad();
                     clearInfoWindow();
-                }else{
+                } else {
                     Toast.makeText(getActivity(), "Unable to find location. Try again later", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -317,14 +211,14 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         map.setBuiltInZoomControls(true);
 
         mapController.setZoom(zoomLevel);
-        mapController.setCenter(mapCenter);
+        mapController.setCenter(mMapCenter);
 
 
         MapEventsOverlay mapEventsOverlay = new MapEventsOverlay(this.getActivity().getApplicationContext(), this);
         map.getOverlays().add(0, mapEventsOverlay);
 
         userLocationMarker = new Marker(map);
-        userLocationMarker.setPosition(userLocation);
+        userLocationMarker.setPosition(mUserLocation);
         userLocationMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         userLocationMarker.setInfoWindow(new SetLocationInfoWindow(map, userLocationMarker));
         Drawable userIcon = getResources().getDrawable(R.drawable.user_marker);
@@ -467,9 +361,25 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         }
     }
 
-    @Override
-    public void onResult(LocationSettingsResult locationSettingsResult) {
 
+    @Override
+    public void onConnectedCallback() {
+        Location lastLocation = mLocationManager.getLastLocation();
+
+        if (lastLocation != null) {
+            if (firstStartUp){
+                GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
+                mUserLocation = location;
+                DataHolder.userLocation = mUserLocation;
+                mMapCenter = location;
+
+                /*An akward way to test if onCreateView has been called*/
+                if (userLocationMarker != null){
+                    mapController.animateTo(mMapCenter);
+                    updateUserLocation(mUserLocation);
+                }
+            }
+        }
     }
 
     private class NavigateInfoWindow extends MarkerInfoWindow {
@@ -495,7 +405,7 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
             naviBtn.setText("Navigate");
             naviBtn.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
-                    fetchRoadAndDisplay(userLocation, marker.getPosition());
+                    fetchRoadAndDisplay(mUserLocation, marker.getPosition());
                 }
             });
 
@@ -529,11 +439,11 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
                 locationBtn.setText("Set location");
                 locationBtn.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View view) {
-                        if (!userLocation.equals(marker.getPosition())){
+                        if (!mUserLocation.equals(marker.getPosition())){
                             Toast.makeText(view.getContext(), "setting location...", Toast.LENGTH_SHORT).show();
                             updateUserLocation(marker.getPosition());
-                            DataHolder.userLocation = userLocation;
-                            listener.onLocationChanged(userLocation);
+                            DataHolder.userLocation = mUserLocation;
+                            listener.onLocationChanged(mUserLocation);
                             removeOverlay(marker);
                             pinPointMarker = null;
                         }
@@ -560,8 +470,8 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
 
 
     private void updateUserLocation(GeoPoint location){
-        userLocation = location;
-        userLocationMarker.setPosition(userLocation);
+        mUserLocation = location;
+        userLocationMarker.setPosition(mUserLocation);
         map.invalidate();
     }
 
@@ -570,18 +480,12 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
         saveInstanceState.putDouble(MAP_CENTER_LATITUDE_KEY, map.getMapCenter().getLatitude());
         saveInstanceState.putDouble(MAP_CENTER_LONGITUDE_KEY, map.getMapCenter().getLongitude());
         saveInstanceState.putInt(CURRENT_ZOOM_LEVEL_KEY, map.getZoomLevel());
-        saveInstanceState.putDouble(USER_LOCATION_LATITUDE_KEY, userLocation.getLatitude());
-        saveInstanceState.putDouble(USER_LOCATION_LONGITUDE_KEY, userLocation.getLongitude());
+        saveInstanceState.putDouble(USER_LOCATION_LATITUDE_KEY, mUserLocation.getLatitude());
+        saveInstanceState.putDouble(USER_LOCATION_LONGITUDE_KEY, mUserLocation.getLongitude());
         saveInstanceState.putBoolean(NAVIGATING_KEY, navigating);
         saveInstanceState.putParcelable(CURRENT_ROAD_KEY, currentRoad);
 
     }
-
-    @Override
-    public void onLocationChanged(Location location) {
-
-    }
-
 
     @Override
     public boolean singleTapConfirmedHelper(GeoPoint p) {
@@ -614,17 +518,13 @@ public class MapFragment extends Fragment implements ConnectionCallbacks, OnConn
     public void onPause(){
         super.onPause();
         zoomLevel = map.getZoomLevel();
-        mapCenter = (GeoPoint)map.getMapCenter();
+        mMapCenter = (GeoPoint)map.getMapCenter();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (googleApiClient != null) {
-            stopLocationUpdates();
-            googleApiClient.disconnect();
-        }
-
+        mLocationManager.googleApiClientDisconnect();
         getActivity().unregisterReceiver(roadReceiver);
     }
 
