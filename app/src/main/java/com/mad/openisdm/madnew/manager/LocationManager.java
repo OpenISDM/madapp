@@ -132,8 +132,9 @@ public class LocationManager implements
         Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(
                 mGoogleApiClient);
 
-        mConnectedCallback.onConnectedCallback();
-
+        if (mConnectedCallback != null) {
+            mConnectedCallback.onConnectedCallback();g
+        }
 
         startLocationUpdates();
     }
