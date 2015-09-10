@@ -194,7 +194,8 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
 
                 // Check if the last location is null
                 if (lastLocation != null){
-                    GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
+                    GeoPoint location = new GeoPoint(lastLocation.getLatitude(),
+                            lastLocation.getLongitude());
                     mMapCenter = location;
                     updateUserLocation(location);
                     DataHolder.userLocation = location;
