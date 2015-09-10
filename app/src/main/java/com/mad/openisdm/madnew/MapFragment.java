@@ -43,8 +43,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.internal.LocationRequestInternal;
 import com.mad.openisdm.madnew.manager.LocationManager;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
@@ -70,7 +68,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 
-public class MapFragment extends Fragment implements MapEventsReceiver, LocationManager.ConnectedCallback {
+public class MapFragment extends Fragment implements MapEventsReceiver,
+        LocationManager.ConnectedCallback, LocationListener {
 
 
     private static final GeoPoint SOMEWHERE_IN_GERMANY = new GeoPoint(35.5069039, 139.680770);
@@ -111,11 +110,6 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
     private GeoPoint mUserLocation;
     private GeoPoint mMapCenter;
 
-    /**
-     * Check location settings
-     */
-    protected LocationSettingsRequest mLocationSettingsRequest;
-
     public static MapFragment newInstance() {
         Bundle args = new Bundle();
         MapFragment fragment = new MapFragment();
@@ -132,8 +126,10 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
         clusterer = null;
         pinPointMarker = null;
         currentRoadOverlay = null;
-        mLocationManager = new LocationManager(getActivity());
+        mLocationManager = LocationManager.getInstance();
+        mLocationManager.setActivity(getActivity());
         mLocationManager.setOnConnectedCallback(this);
+        mLocationManager.addLocationChangeListener(this);
 
         if (savedInstanceState == null){
             firstStartUp = true;
@@ -199,7 +195,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
                     clearRoad();
                     clearInfoWindow();
                 } else {
-                    Toast.makeText(getActivity(), "Unable to find location. Try again later", Toast.LENGTH_SHORT).show();
+                    mLocationManager.checkLocationSettings();
                 }
             }
         });
@@ -382,6 +378,17 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
         }
     }
 
+    @Override
+    public void onLocationChanged(Location location) {
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+        GeoPoint geoPoint = new GeoPoint(latitude, longitude);
+
+        updateUserLocation(geoPoint);
+        mMapCenter = geoPoint;
+        mapController.animateTo(mMapCenter);
+    }
+
     private class NavigateInfoWindow extends MarkerInfoWindow {
         ListView list;
         ArrayAdapter<String> adapter;
@@ -469,7 +476,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
     }
 
 
-    private void updateUserLocation(GeoPoint location){
+    private void updateUserLocation(GeoPoint location) {
         mUserLocation = location;
         userLocationMarker.setPosition(mUserLocation);
         map.invalidate();
