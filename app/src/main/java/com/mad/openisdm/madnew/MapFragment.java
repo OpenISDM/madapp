@@ -155,9 +155,10 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
 
         if (mLocationManager.checkGooglePlayServices()) {
             mLocationManager.buildGoogleApiClient();
+            // Create location request
             mLocationManager.createLocationRequest();
+            // Build location settings request for checking settings
             mLocationManager.buildLocationSettingsRequest();
-            mLocationManager.checkLocationSettings();
         }
     }
 
@@ -167,10 +168,12 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
 
         mLocationManager.googleApiClientConnect();
 
-        IntentFilter filter= new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
+        IntentFilter filter = new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
         filter.addCategory(Intent.CATEGORY_DEFAULT);
         roadReceiver = new RoadReceiver();
         getActivity().registerReceiver(roadReceiver, filter);
+        // Check location settings
+        mLocationManager.checkLocationSettings();
     }
 
     @Override
@@ -195,6 +198,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
                     clearRoad();
                     clearInfoWindow();
                 } else {
+                    Log.v(this.toString(), "onCreateView");
                     mLocationManager.checkLocationSettings();
                 }
             }

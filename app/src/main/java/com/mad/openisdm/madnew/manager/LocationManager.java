@@ -124,6 +124,7 @@ public class LocationManager implements
     public void buildLocationSettingsRequest() {
         mLocationSettingsRequest = new LocationSettingsRequest.Builder()
                 .addLocationRequest(mLocationRequest)
+                .setAlwaysShow(true)
                 .build();
     }
 
