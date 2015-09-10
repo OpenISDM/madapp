@@ -1,22 +1,30 @@
 package com.mad.openisdm.madnew.manager;
 
 import android.app.Activity;
+import android.content.IntentSender;
 import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.mad.openisdm.madnew.MainActivity;
 import com.mad.openisdm.madnew.model.DataHolder;
 
 import org.osmdroid.util.GeoPoint;
+
+import java.util.ArrayList;
 
 /**
  * Created by aming on 2015/9/8.
@@ -38,9 +46,31 @@ public class LocationManager implements
 
     private static int REQUEST_CODE_RECOVER_PLAY_SERVICES = 200;
     private ConnectedCallback mConnectedCallback;
+    private ArrayList<LocationListener> mLocationListenerList;
 
-    public LocationManager (Activity activity) {
+    /**
+     * Self instance
+     */
+    private static LocationManager mLocationManager;
+
+    private LocationManager () {
+        mLocationListenerList = new ArrayList<LocationListener>();
+    }
+
+    public static synchronized LocationManager getInstance() {
+        if (mLocationManager == null) {
+            mLocationManager = new LocationManager();
+        }
+
+        return mLocationManager;
+    }
+
+    public void setActivity(Activity activity) {
         mActivity = activity;
+    }
+
+    public void addLocationChangeListener(LocationListener locationListener) {
+        mLocationListenerList.add(locationListener);
     }
 
     public boolean checkGooglePlayServices() {
@@ -96,7 +126,8 @@ public class LocationManager implements
     }
 
     public void startLocationUpdates() {
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
+                mLocationRequest, this);
     }
 
     public void stopLocationUpdates() {
@@ -135,8 +166,6 @@ public class LocationManager implements
         if (mConnectedCallback != null) {
             mConnectedCallback.onConnectedCallback();
         }
-
-        startLocationUpdates();
     }
 
     @Override
@@ -151,15 +180,46 @@ public class LocationManager implements
 
     @Override
     public void onResult(LocationSettingsResult locationSettingsResult) {
+        final Status status = locationSettingsResult.getStatus();
+        switch (status.getStatusCode()) {
+            case LocationSettingsStatusCodes.SUCCESS:
+                Log.v("MADApp", "All location settings are satisfied.");
+                startLocationUpdates();
 
+                break;
+            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                Log.v("MADApp", "Location settings are not satisfied.");
+
+                try {
+                    status.startResolutionForResult(mActivity,
+                            ((MainActivity) mActivity).getLocationSettingsActivityResultCode());
+                } catch (IntentSender.SendIntentException e) {
+                    e.printStackTrace();
+                }
+
+                break;
+            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                Log.v("MADApp", "Location settings are inadequate, and cannot be fixed here.");
+                Toast.makeText(mActivity, "Unable to find location. Try again later",
+                        Toast.LENGTH_SHORT).show();
+
+                break;
+        }
     }
 
     @Override
     public void onLocationChanged(Location location) {
-
+        for (LocationListener locationListener: mLocationListenerList
+             ) {
+            locationListener.onLocationChanged(location);
+        }
     }
 
     public interface ConnectedCallback {
         void onConnectedCallback();
+    }
+
+    public interface LocationResolutionCode {
+        int getLocationSettingsActivityResultCode();
     }
 }

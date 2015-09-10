@@ -1,5 +1,7 @@
 package com.mad.openisdm.madnew;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -18,8 +20,11 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
+import com.mad.openisdm.madnew.manager.LocationManager;
+import com.mad.openisdm.madnew.manager.LocationManager.LocationResolutionCode;
 import com.mad.openisdm.madnew.model.Shelter;
 import com.mad.openisdm.madnew.manager.ShelterManager;
 import com.mad.openisdm.madnew.model.ShelterSourceSelector;
@@ -30,7 +35,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 
-public class  MainActivity extends ActionBarActivity implements Shelter.OnShelterReceiveListener, OnLocationChangedListener {
+public class MainActivity extends ActionBarActivity implements Shelter.OnShelterReceiveListener,
+        OnLocationChangedListener,
+        LocationResolutionCode {
+    public static final int REQUEST_CHECK_LOCATION_SETTINGS = 1;
     private static final String CURRENT_ITEM_KEY = "current item key";
     private static final String[] LIST_OF_ITEMS = {"Taipei", "Hsinchu", "New Taipei"};
     private static final String LIST_FRAGMENT_KEY = "LIST_FRAGMENT_KEY";
@@ -50,7 +58,6 @@ public class  MainActivity extends ActionBarActivity implements Shelter.OnShelte
     ViewPager viewPager;
 
     ShelterManager shelterManager;
-    
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -169,6 +176,23 @@ public class  MainActivity extends ActionBarActivity implements Shelter.OnShelte
         getSupportActionBar().setTitle(str);
     }
 
+    private void processRequestCheckLocationSettings(int resultCode) {
+        LocationManager locationManager = LocationManager.getInstance();
+
+        switch (resultCode) {
+            case Activity.RESULT_OK:
+                Log.v(this.toString(), "RESULT_OK");
+                locationManager.startLocationUpdates();
+
+                break;
+            case Activity.RESULT_CANCELED:
+                Log.v(this.toString(), "RESULT_CANCELED");
+                Toast.makeText(this, "Unable to find location. Try again later", Toast.LENGTH_SHORT).show();
+
+                break;
+        }
+    }
+
     @Override
     public void onSaveInstanceState(Bundle outState){
         super.onSaveInstanceState(outState);
@@ -183,6 +207,20 @@ public class  MainActivity extends ActionBarActivity implements Shelter.OnShelte
         super.onPostCreate(savedInstanceState);
         // Sync the toggle state after onRestoreInstanceState has occurred.
         drawerToggle.syncState();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case REQUEST_CHECK_LOCATION_SETTINGS:
+                Log.v(this.toString(), "REQUEST_CHECK_LOCATION_SETTINGS");
+
+                processRequestCheckLocationSettings(resultCode);
+
+                break;
+        }
     }
 
     @Override
@@ -235,6 +273,16 @@ public class  MainActivity extends ActionBarActivity implements Shelter.OnShelte
         }
         mapFragment.setAndUpdateShelters(shelters);
         listFragment.setAndUpdateShelters(shelters);
+    }
+
+    /**
+     * Get activity result code
+     *
+     * @return
+     */
+    @Override
+    public int getLocationSettingsActivityResultCode() {
+        return REQUEST_CHECK_LOCATION_SETTINGS;
     }
 
     private class MyFragmentStatePagerAdapter extends FragmentStatePagerAdapter{
