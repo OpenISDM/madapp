@@ -20,13 +20,12 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.mad.openisdm.madnew.MainActivity;
-import com.mad.openisdm.madnew.model.DataHolder;
-
-import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
 
 /**
+ * LocationManager is a singleton pattern
+ *
  * Created by aming on 2015/9/8.
  */
 public class LocationManager implements
@@ -49,7 +48,7 @@ public class LocationManager implements
     private ArrayList<LocationListener> mLocationListenerList;
 
     /**
-     * Self instance
+     * Self instance.
      */
     private static LocationManager mLocationManager;
 
@@ -57,6 +56,11 @@ public class LocationManager implements
         mLocationListenerList = new ArrayList<LocationListener>();
     }
 
+    /**
+     * LocationManager singleton object
+     *
+     * @return
+     */
     public static synchronized LocationManager getInstance() {
         if (mLocationManager == null) {
             mLocationManager = new LocationManager();
@@ -65,10 +69,18 @@ public class LocationManager implements
         return mLocationManager;
     }
 
+    /**
+     * Set activity object
+     * @param activity
+     */
     public void setActivity(Activity activity) {
         mActivity = activity;
     }
 
+    /**
+     * Add LocationListener interface into a ArrayList
+     * @param locationListener
+     */
     public void addLocationChangeListener(LocationListener locationListener) {
         mLocationListenerList.add(locationListener);
     }
@@ -178,6 +190,11 @@ public class LocationManager implements
 
     }
 
+    /**
+     * After checking location settings, the onResult() will be invoked.
+     *
+     * @param locationSettingsResult
+     */
     @Override
     public void onResult(LocationSettingsResult locationSettingsResult) {
         final Status status = locationSettingsResult.getStatus();

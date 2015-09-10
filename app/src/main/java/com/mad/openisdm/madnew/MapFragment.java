@@ -43,8 +43,6 @@ import android.widget.Toast;
 
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.internal.LocationRequestInternal;
 import com.mad.openisdm.madnew.manager.LocationManager;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
@@ -111,11 +109,6 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
     private boolean firstStartUp;
     private GeoPoint mUserLocation;
     private GeoPoint mMapCenter;
-
-    /**
-     * Check location settings
-     */
-    protected LocationSettingsRequest mLocationSettingsRequest;
 
     public static MapFragment newInstance() {
         Bundle args = new Bundle();
