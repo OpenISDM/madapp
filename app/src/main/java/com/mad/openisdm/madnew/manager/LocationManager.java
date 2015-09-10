@@ -71,6 +71,7 @@ public class LocationManager implements
 
     /**
      * Set activity object
+     *
      * @param activity
      */
     public void setActivity(Activity activity) {
@@ -79,12 +80,18 @@ public class LocationManager implements
 
     /**
      * Add LocationListener interface into a ArrayList
+     *
      * @param locationListener
      */
     public void addLocationChangeListener(LocationListener locationListener) {
         mLocationListenerList.add(locationListener);
     }
 
+    /**
+     * Check whether the Google Play services is available or not
+     *
+     * @return
+     */
     public boolean checkGooglePlayServices() {
         int checkGooglePlayServices = GooglePlayServicesUtil
                 .isGooglePlayServicesAvailable(mActivity);
@@ -105,7 +112,10 @@ public class LocationManager implements
         return true;
     }
 
-
+    /**
+     * Create and build a Google API client
+     *
+     */
     public synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(mActivity)
                 .addConnectionCallbacks(this)
@@ -114,6 +124,9 @@ public class LocationManager implements
                 .build();
     }
 
+    /**
+     * Create location request
+     */
     public void createLocationRequest() {
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(20000);
@@ -121,13 +134,20 @@ public class LocationManager implements
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
     }
 
+    /**
+     * Build a location settings request
+     *
+     */
     public void buildLocationSettingsRequest() {
         mLocationSettingsRequest = new LocationSettingsRequest.Builder()
                 .addLocationRequest(mLocationRequest)
-                .setAlwaysShow(true)
+                .setAlwaysShow(true)    // Always show the dialog
                 .build();
     }
 
+    /**
+     * Check the user's location settings
+     */
     public void checkLocationSettings() {
         PendingResult<LocationSettingsResult> result =
                 LocationServices.SettingsApi.checkLocationSettings(
@@ -138,11 +158,18 @@ public class LocationManager implements
         result.setResultCallback(this);
     }
 
+    /**
+     * Start to update location
+     *
+     */
     public void startLocationUpdates() {
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
                 mLocationRequest, this);
     }
 
+    /**
+     * Stop updating location
+     */
     public void stopLocationUpdates() {
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
@@ -154,12 +181,20 @@ public class LocationManager implements
         mConnectedCallback = connectedCallback;
     }
 
+    /**
+     * Connect with the Google Service
+     *
+     */
     public void googleApiClientConnect() {
         if (mGoogleApiClient != null ) {
             mGoogleApiClient.connect();
         }
     }
 
+    /**
+     * Disconnect with the Google Service
+     *
+     */
     public void googleApiClientDisconnect() {
         if (mGoogleApiClient != null) {
             stopLocationUpdates();

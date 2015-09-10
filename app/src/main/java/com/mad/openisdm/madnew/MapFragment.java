@@ -153,7 +153,9 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
             navigating = savedInstanceState.getBoolean(NAVIGATING_KEY);
         }
 
+        // Check if the Google Service is available
         if (mLocationManager.checkGooglePlayServices()) {
+            // Create and build a Google API client
             mLocationManager.buildGoogleApiClient();
             // Create location request
             mLocationManager.createLocationRequest();
@@ -166,28 +168,31 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
     public void onStart() {
         super.onStart();
 
+        // Connect with Google Services
         mLocationManager.googleApiClientConnect();
+        // Check location settings
+        mLocationManager.checkLocationSettings();
 
         IntentFilter filter = new IntentFilter(RoadReceiver.RECEIVE_ROAD_ACTION);
         filter.addCategory(Intent.CATEGORY_DEFAULT);
         roadReceiver = new RoadReceiver();
         getActivity().registerReceiver(roadReceiver, filter);
-        // Check location settings
-        mLocationManager.checkLocationSettings();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
         View root = inflater.inflate(R.layout.fragment_map, container, false);
 
+        // The find currnet location button
         ImageButton findLocation = (ImageButton)root.findViewById(R.id.fab_image_button);
         findLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Get user's last location
                 Location lastLocation = mLocationManager.getLastLocation();
 
+                // Check if the last location is null
                 if (lastLocation != null){
                     GeoPoint location = new GeoPoint(lastLocation.getLatitude(), lastLocation.getLongitude());
                     mMapCenter = location;
@@ -198,7 +203,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
                     clearRoad();
                     clearInfoWindow();
                 } else {
-                    Log.v(this.toString(), "onCreateView");
+                    // Check user's location settings
                     mLocationManager.checkLocationSettings();
                 }
             }
@@ -382,6 +387,12 @@ public class MapFragment extends Fragment implements MapEventsReceiver,
         }
     }
 
+    /**
+     * When the user's location changed, the LocationManager will call the callback function.
+     * The callback function will update the map and display the last user's location
+     *
+     * @param location
+     */
     @Override
     public void onLocationChanged(Location location) {
         double latitude = location.getLatitude();
