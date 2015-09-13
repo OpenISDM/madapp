@@ -67,7 +67,7 @@ public class ShelterManager {
             boolean exception = intent.getBooleanExtra(FetchJSONIntentService.EXCEPTION_KEY, false);
             if (exception){
                 Toast.makeText(context, "IO ERROR", Toast.LENGTH_SHORT).show();
-                Log.i("IOTAG", "IO ERROR");
+                Log.i("IOTAG", "No Network Connection");
             }else{
                 try {
                     jsonObject = new JSONObject(DataHolder.jsonStr);

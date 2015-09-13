@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import com.mad.openisdm.madnew.Config;
 import com.mad.openisdm.madnew.service.FetchJSONIntentService;
 
 import java.util.HashMap;
@@ -27,7 +28,6 @@ public class ShelterSourceSelector {
     public void fetchFromSource(){
         String url = new ShelterID().getIDMapping().get(shelterID);
         Intent serviceIntent = new Intent(context, FetchJSONIntentService.class);
-        Log.i("URLTAG", url);
         serviceIntent.putExtra(FetchJSONIntentService.URL_KEY, url);
         context.startService(serviceIntent);
     }

@@ -1,6 +1,8 @@
 package com.mad.openisdm.madnew;
 
+import android.app.ProgressDialog;
 import android.content.res.Configuration;
+import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -21,25 +23,36 @@ import android.widget.ListView;
 
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
 import com.mad.openisdm.madnew.listener.OnShelterReceiveListener;
+import com.mad.openisdm.madnew.model.City;
 import com.mad.openisdm.madnew.model.Shelter;
 import com.mad.openisdm.madnew.manager.ShelterManager;
 import com.mad.openisdm.madnew.model.ShelterSourceSelector;
+import com.mad.openisdm.madnew.util.JsonReader;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 
 public class  MainActivity extends ActionBarActivity implements OnShelterReceiveListener, OnLocationChangedListener {
     private static final String CURRENT_ITEM_KEY = "current item key";
-    private static final String[] LIST_OF_ITEMS = {"Taipei", "Hsinchu", "New Taipei"};
+    private static ArrayList<String> mListOfItem = null;
     private static final String LIST_FRAGMENT_KEY = "LIST_FRAGMENT_KEY";
     private static final String MAP_FRAGMENT_KEY = "MAP_FRAGMENT_KEY";
     private static final int DEFAULT_ITEM = 1;
 
     private int currentItem = 0;
     private DrawerLayout drawerLayout;
+    private ArrayAdapter drawerAdapter;
     private ListView drawerList;
     private ActionBarDrawerToggle drawerToggle;
     private MapFragment mapFragment;
@@ -76,19 +89,26 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
         viewPager = (ViewPager) findViewById(R.id.pager);
         viewPager.setAdapter(pagerAdapter);
 
-        viewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener(){
+        viewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
                 getSupportActionBar().setSelectedNavigationItem(position);
             }
         });
 
+        mListOfItem = new ArrayList<String>();
+        mListOfItem.add("a");
+        mListOfItem.add("b");
+        mListOfItem.add("c");
         drawerList = (ListView)findViewById(R.id.left_drawer);
         drawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
-        drawerList.setAdapter(new ArrayAdapter(this, R.layout.drawer_list_item, LIST_OF_ITEMS));
+        drawerAdapter = new ArrayAdapter(this, R.layout.drawer_list_item, mListOfItem);
+        drawerList.setAdapter(drawerAdapter);
 
         //shelterManager.registerJSONBroadcastReceiver();
         shelterManager.connect();
+
+        new AsyncCityListViewLoader().execute(Config.INTERFACE_SERVER_CITY_LIST_URL);
 
         drawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -104,7 +124,7 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
                     sourceID = ShelterSourceSelector.ShelterID.SHOW_NEW_TAIPEI;
                 }
                 new ShelterSourceSelector(MainActivity.this).selectShelterSource(sourceID).fetchFromSource();
-                setActionBarTitle(LIST_OF_ITEMS[currentItem]);
+                setActionBarTitle(mListOfItem.get(currentItem));
                 drawerList.setItemChecked(position, true);
                 drawerLayout.closeDrawers();
             }
@@ -305,7 +325,7 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
                 drawerList.getAdapter().getView(currentItem, null, null),
                 currentItem,
                 drawerList.getAdapter().getItemId(currentItem));
-    }
+     }
 
     public void onStop(){
         Log.e("Activity---", "onStop");
@@ -313,6 +333,39 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
 
         //shelterManager.unregisterJSONBroadcastReceiver();
         shelterManager.disconnect();
+    }
+
+    private class AsyncCityListViewLoader extends AsyncTask<String, Void, Void> {
+        private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+
+        @Override
+        protected void onPostExecute(Void aVoid){
+            dialog.dismiss();
+        }
+
+        @Override
+        protected void onPreExecute(){
+            dialog.setMessage("Downloading city list...");
+            dialog.show();
+        }
+
+        @Override
+        protected Void doInBackground(String... params){
+            try{
+                String jsonText = JsonReader.readJsonFromUrl(params[0]);
+                JSONObject root = new JSONObject(jsonText);
+                JSONArray jsonResult = root.getJSONArray("results");
+
+                for (int i = 0 ; i < jsonResult.length(); i++) {
+                    drawerAdapter.add(jsonResult.getString(i));
+                }
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+            return null;
+        }
+
     }
 
 
