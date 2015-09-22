@@ -1,6 +1,7 @@
 package com.mad.openisdm.madnew;
 
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.support.v4.app.Fragment;
@@ -24,6 +25,7 @@ import android.widget.ListView;
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
 import com.mad.openisdm.madnew.listener.OnShelterReceiveListener;
 import com.mad.openisdm.madnew.model.City;
+import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.model.Shelter;
 import com.mad.openisdm.madnew.manager.ShelterManager;
 import com.mad.openisdm.madnew.model.ShelterSourceSelector;
@@ -96,13 +98,10 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
             }
         });
 
-        mListOfItem = new ArrayList<String>();
-        mListOfItem.add("a");
-        mListOfItem.add("b");
-        mListOfItem.add("c");
+        mListOfItem = new ArrayList<String>(){{add("a");add("b");add("c");}};
         drawerList = (ListView)findViewById(R.id.left_drawer);
         drawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
-        drawerAdapter = new ArrayAdapter(this, R.layout.drawer_list_item, mListOfItem);
+        drawerAdapter = new ArrayAdapter(this, R.layout.drawer_list_item);
         drawerList.setAdapter(drawerAdapter);
 
         //shelterManager.registerJSONBroadcastReceiver();
@@ -115,16 +114,18 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 currentItem = position;
                 String item = (String) parent.getAdapter().getItem(position);
-                int sourceID = 0;
-                if (item.equals("Taipei")) {
-                    sourceID = ShelterSourceSelector.ShelterID.SHOW_TAIPEI;
-                } else if (item.equals("Hsinchu")) {
-                    sourceID = ShelterSourceSelector.ShelterID.SHOW_HSINCHU;
-                } else if (item.equals("New Taipei")) {
-                    sourceID = ShelterSourceSelector.ShelterID.SHOW_NEW_TAIPEI;
-                }
-                new ShelterSourceSelector(MainActivity.this).selectShelterSource(sourceID).fetchFromSource();
-                setActionBarTitle(mListOfItem.get(currentItem));
+//                int sourceID = 0;
+//                if (item.equals("Taipei")) {
+//                    sourceID = ShelterSourceSelector.ShelterID.SHOW_TAIPEI;
+//                } else if (item.equals("Hsinchu")) {
+//                    sourceID = ShelterSourceSelector.ShelterID.SHOW_HSINCHU;
+//                } else if (item.equals("New Taipei")) {
+//                    sourceID = ShelterSourceSelector.ShelterID.SHOW_NEW_TAIPEI;
+//                }
+                String url = Config.INTERFACE_SERVER_CITY_DATA_URL_PREFIX + item;
+//                new ShelterSourceSelector(MainActivity.this).selectShelterSource().fetchFromSource(url);
+                new AsyncCityJsonLoader().execute(url);
+                setActionBarTitle(item);
                 drawerList.setItemChecked(position, true);
                 drawerLayout.closeDrawers();
             }
@@ -321,10 +322,10 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
         //shelterManager.registerJSONBroadcastReceiver();
         shelterManager.connect();
 
-        drawerList.performItemClick(
-                drawerList.getAdapter().getView(currentItem, null, null),
-                currentItem,
-                drawerList.getAdapter().getItemId(currentItem));
+//        drawerList.performItemClick(
+//                drawerList.getAdapter().getView(currentItem, null, null),
+//                currentItem,
+//                drawerList.getAdapter().getItemId(currentItem));
      }
 
     public void onStop(){
@@ -368,5 +369,38 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
 
     }
 
+    private class AsyncCityJsonLoader extends AsyncTask<String, Void, ArrayList<Shelter> > {
+        private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+
+
+        @Override
+        protected void onPostExecute(ArrayList<Shelter> shelters){
+            mapFragment.setAndUpdateShelters(shelters);
+//            dialog.dismiss();
+//            listFragment.setAndUpdateShelters(shelters);
+        }
+
+        @Override
+        protected void onPreExecute(){
+//            dialog.setMessage("Downloading city data...");
+//            dialog.show();
+        }
+
+        @Override
+        protected ArrayList<Shelter>  doInBackground(String... params){
+            try{
+                String jsonText = JsonReader.readJsonFromUrl(params[0]);
+                DataHolder.jsonStr = jsonText;
+                JSONObject jsonObject = new JSONObject(DataHolder.jsonStr);
+                ArrayList<Shelter> shelters = Shelter.parseFromRoot(jsonObject);
+                return shelters;
+        }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+    }
 
 }

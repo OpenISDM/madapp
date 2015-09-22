@@ -17,6 +17,8 @@ public class JsonReader {
         StringBuilder sb = new StringBuilder();
         int cp;
         while ((cp = rd.read()) != -1) {
+            // If target device's memory is smaller, and this function will throw out a message
+            // with "OutOfMemory"
             sb.append((char) cp);
         }
         return sb.toString();

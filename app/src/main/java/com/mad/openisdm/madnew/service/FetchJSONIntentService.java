@@ -2,6 +2,7 @@ package com.mad.openisdm.madnew.service;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.util.Log;
 
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.util.JsonReader;

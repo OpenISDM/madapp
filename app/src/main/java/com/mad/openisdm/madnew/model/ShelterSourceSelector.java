@@ -20,13 +20,13 @@ public class ShelterSourceSelector {
         this.context = context;
     }
 
-    public ShelterSourceSelector selectShelterSource(int shelterID){
-        this.shelterID = shelterID;
+    public ShelterSourceSelector selectShelterSource(){
+//        this.shelterID = shelterID;
         return this;
     }
 
-    public void fetchFromSource(){
-        String url = new ShelterID().getIDMapping().get(shelterID);
+    public void fetchFromSource(String url){
+//        String url = new ShelterID().getIDMapping().get(shelterID);
         Intent serviceIntent = new Intent(context, FetchJSONIntentService.class);
         serviceIntent.putExtra(FetchJSONIntentService.URL_KEY, url);
         context.startService(serviceIntent);

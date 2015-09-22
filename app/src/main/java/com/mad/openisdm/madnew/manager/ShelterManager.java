@@ -42,7 +42,7 @@ public class ShelterManager {
         IntentFilter filter = new IntentFilter(JSONBroadcastReceiver.RECEIVE_JSON_ACTION);
         filter.addCategory(Intent.CATEGORY_DEFAULT);
         context.registerReceiver(jsonBroadcastReceiver, filter);
-    }
+   }
 
     public void disconnect(){
         context.unregisterReceiver(jsonBroadcastReceiver);
