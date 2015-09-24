@@ -1,9 +1,11 @@
 package com.mad.openisdm.madnew;
 
 import android.app.ProgressDialog;
-import android.content.Context;
+
 import android.content.res.Configuration;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -11,9 +13,9 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,49 +26,38 @@ import android.widget.ListView;
 
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
 import com.mad.openisdm.madnew.listener.OnShelterReceiveListener;
-import com.mad.openisdm.madnew.model.City;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.model.Shelter;
 import com.mad.openisdm.madnew.manager.ShelterManager;
-import com.mad.openisdm.madnew.model.ShelterSourceSelector;
 import com.mad.openisdm.madnew.util.JsonReader;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.osmdroid.util.GeoPoint;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 
 
-public class  MainActivity extends ActionBarActivity implements OnShelterReceiveListener, OnLocationChangedListener {
+public class  MainActivity extends AppCompatActivity implements OnShelterReceiveListener, OnLocationChangedListener {
     private static final String CURRENT_ITEM_KEY = "current item key";
-    private static ArrayList<String> mListOfItem = null;
     private static final String LIST_FRAGMENT_KEY = "LIST_FRAGMENT_KEY";
     private static final String MAP_FRAGMENT_KEY = "MAP_FRAGMENT_KEY";
-    private static final int DEFAULT_ITEM = 1;
 
-    private int currentItem = 0;
-    private DrawerLayout drawerLayout;
-    private ArrayAdapter drawerAdapter;
-    private ListView drawerList;
-    private ActionBarDrawerToggle drawerToggle;
+    private int mCurrentItem = 0;
+    private DrawerLayout mDrawerLayout;
+    private ArrayAdapter mDrawerAdapter;
+    private ListView mDrawerList;
+    private ActionBarDrawerToggle mDrawerToggle;
     private MapFragment mapFragment;
-    private ShelterListFragment listFragment;
+    private ShelterListFragment mListFragment;
+    private ArrayList<Shelter> mShelters;
+    private Handler mHandle = new Handler(Looper.getMainLooper());
 
-    private ArrayList<Shelter> shelters;
+    MyFragmentStatePagerAdapter mPagerAdapter;
+    ViewPager mViewPager;
+    ShelterManager mShelterManager;
 
-    MyFragmentStatePagerAdapter pagerAdapter;
-    ViewPager viewPager;
-
-    ShelterManager shelterManager;
-    
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,65 +65,66 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        shelterManager = new ShelterManager(this, this);
+        mShelterManager = new ShelterManager(this, this);
 
-        if (savedInstanceState != null){
-            currentItem = savedInstanceState.getInt(CURRENT_ITEM_KEY);
-            listFragment = (ShelterListFragment)getSupportFragmentManager().getFragment(savedInstanceState, LIST_FRAGMENT_KEY);
-            //shelterManager.addReceiver(listFragment);
-            mapFragment = (MapFragment)getSupportFragmentManager().getFragment(savedInstanceState, MAP_FRAGMENT_KEY);
-            //shelterManager.addReceiver(mapFragment);
-        }else{
-            currentItem = DEFAULT_ITEM;
+        if (savedInstanceState != null) {
+            mCurrentItem = savedInstanceState.getInt(CURRENT_ITEM_KEY);
+            mListFragment =
+                    (ShelterListFragment) getSupportFragmentManager().getFragment(savedInstanceState, LIST_FRAGMENT_KEY);
+            mapFragment =
+                    (MapFragment) getSupportFragmentManager().getFragment(savedInstanceState, MAP_FRAGMENT_KEY);
         }
 
+        mPagerAdapter = new MyFragmentStatePagerAdapter(getSupportFragmentManager());
+        mViewPager = (ViewPager) findViewById(R.id.pager);
+        mViewPager.setAdapter(mPagerAdapter);
 
-        pagerAdapter = new MyFragmentStatePagerAdapter(getSupportFragmentManager());
-        viewPager = (ViewPager) findViewById(R.id.pager);
-        viewPager.setAdapter(pagerAdapter);
-
-        viewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+        mViewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
                 getSupportActionBar().setSelectedNavigationItem(position);
             }
         });
 
-        mListOfItem = new ArrayList<String>(){{add("a");add("b");add("c");}};
-        drawerList = (ListView)findViewById(R.id.left_drawer);
-        drawerLayout = (DrawerLayout)findViewById(R.id.drawer_layout);
-        drawerAdapter = new ArrayAdapter(this, R.layout.drawer_list_item);
-        drawerList.setAdapter(drawerAdapter);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerAdapter = new ArrayAdapter(this, R.layout.drawer_list_item);
+        mDrawerList.setAdapter(mDrawerAdapter);
 
-        //shelterManager.registerJSONBroadcastReceiver();
-        shelterManager.connect();
+        mShelterManager.connect();
 
         new AsyncCityListViewLoader().execute(Config.INTERFACE_SERVER_CITY_LIST_URL);
 
-        drawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                currentItem = position;
+
                 String item = (String) parent.getAdapter().getItem(position);
-//                int sourceID = 0;
-//                if (item.equals("Taipei")) {
-//                    sourceID = ShelterSourceSelector.ShelterID.SHOW_TAIPEI;
-//                } else if (item.equals("Hsinchu")) {
-//                    sourceID = ShelterSourceSelector.ShelterID.SHOW_HSINCHU;
-//                } else if (item.equals("New Taipei")) {
-//                    sourceID = ShelterSourceSelector.ShelterID.SHOW_NEW_TAIPEI;
-//                }
-                String url = Config.INTERFACE_SERVER_CITY_DATA_URL_PREFIX + item;
-//                new ShelterSourceSelector(MainActivity.this).selectShelterSource().fetchFromSource(url);
-                new AsyncCityJsonLoader().execute(url);
                 setActionBarTitle(item);
-                drawerList.setItemChecked(position, true);
-                drawerLayout.closeDrawers();
+                mDrawerList.setItemChecked(position, true);
+                mDrawerLayout.closeDrawers();
+
+                final String url = Config.INTERFACE_SERVER_CITY_DATA_URL_PREFIX + item;
+
+
+                new Thread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        Log.d(this.toString(), "Download time 1 = " + System.currentTimeMillis());
+                        downloadCityData(url);
+                        Log.d(this.toString(), "Download time 2 = " + System.currentTimeMillis());
+                        mHandle.post(mRefreshMapView);
+                        Log.d(this.toString(), "Download time 3 = " + System.currentTimeMillis());
+                        //refreshMapView();
+                    }
+
+                }).start();
             }
         });
 
 
-        drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.drawer_open, R.string.drawer_close) {
+        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.drawer_open, R.string.drawer_close) {
 
             /** Called when a drawer has settled in a completely closed state. */
             public void onDrawerClosed(View view) {
@@ -148,14 +140,14 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
             }
         };
 
-        drawerLayout.setDrawerListener(drawerToggle);
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
 
         ActionBar actionBar = getSupportActionBar();
         actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         actionBar.setDisplayHomeAsUpEnabled(true);
         actionBar.setHomeButtonEnabled(true);
 
-        for (int i = 0; i < pagerAdapter.getCount(); i++) {
+        for (int i = 0; i < mPagerAdapter.getCount(); i++) {
 
             /**
              * Create a tab with text corresponding to the page title defined by
@@ -165,12 +157,12 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
              */
             actionBar.addTab(
                     actionBar.newTab()
-                            .setText(pagerAdapter.getPageTitle(i))
+                            .setText(mPagerAdapter.getPageTitle(i))
                             .setTabListener(new ActionBar.TabListener() {
 
                                 @Override
                                 public void onTabSelected(ActionBar.Tab tab, FragmentTransaction ft) {
-                                    viewPager.setCurrentItem(tab.getPosition());
+                                    mViewPager.setCurrentItem(tab.getPosition());
                                 }
 
                                 @Override
@@ -187,30 +179,29 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
         }
     }
 
-    private void setActionBarTitle(String str){
+    private void setActionBarTitle(String str) {
         getSupportActionBar().setTitle(str);
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState){
+    public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putInt(CURRENT_ITEM_KEY, currentItem);
-        getSupportFragmentManager().putFragment(outState, LIST_FRAGMENT_KEY, listFragment);
+        outState.putInt(CURRENT_ITEM_KEY, mCurrentItem);
+        getSupportFragmentManager().putFragment(outState, LIST_FRAGMENT_KEY, mListFragment);
         getSupportFragmentManager().putFragment(outState, MAP_FRAGMENT_KEY, mapFragment);
     }
-
 
     @Override
     protected void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
         // Sync the toggle state after onRestoreInstanceState has occurred.
-        drawerToggle.syncState();
+        mDrawerToggle.syncState();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        drawerToggle.onConfigurationChanged(newConfig);
+        mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
     @Override
@@ -224,10 +215,9 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
     public boolean onOptionsItemSelected(MenuItem item) {
         // Pass the event to ActionBarDrawerToggle, if it returns
         // true, then it has handled the app icon touch event
-        if (drawerToggle.onOptionsItemSelected(item)) {
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;
-        }
-        else if(item.getItemId() == R.id.menuitem_about){
+        } else if (item.getItemId() == R.id.menuitem_about) {
             Calendar calendar = Calendar.getInstance();
             AlertDialogFragment alertDlgFragment = AlertDialogFragment.newInstance("Academia Sinica - OPENISDM",
                     "Mobile MAD App ?" + String.valueOf(calendar.get(Calendar.YEAR)));
@@ -242,25 +232,24 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
 
     @Override
     public void onShelterReceive(ArrayList<Shelter> shelters) {
-        this.shelters = shelters;
+        this.mShelters = shelters;
         mapFragment.setAndUpdateShelters(shelters);
-        listFragment.setAndUpdateShelters(shelters);
+        mListFragment.setAndUpdateShelters(shelters);
     }
 
     @Override
     public void onLocationChanged(GeoPoint userLocation) {
-        if (shelters != null){
-            for (Shelter shelter : shelters){
+        if (mShelters != null) {
+            for (Shelter shelter : mShelters) {
                 shelter.calculateDistance(userLocation);
-                Log.e("sheltertag", "distance:" + shelter.distance + "m");
             }
         }
-        mapFragment.setAndUpdateShelters(shelters);
-        listFragment.setAndUpdateShelters(shelters);
+        mapFragment.setAndUpdateShelters(mShelters);
+        mListFragment.setAndUpdateShelters(mShelters);
     }
 
-    private class MyFragmentStatePagerAdapter extends FragmentStatePagerAdapter{
-        public MyFragmentStatePagerAdapter(FragmentManager fm){
+    private class MyFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
+        public MyFragmentStatePagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
@@ -273,10 +262,11 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
                     //shelterManager.addReceiver(mapFragment);
                     return mapFragment;
                 case 1:
-                    listFragment = new ShelterListFragment();
+                    mListFragment = new ShelterListFragment();
                     //shelterManager.addReceiver(listFragment);
-                    return listFragment;
-                default: return null;
+                    return mListFragment;
+                default:
+                    return null;
             }
         }
 
@@ -320,48 +310,47 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
         Log.e("Activity---", "onStart");
         super.onStart();
         //shelterManager.registerJSONBroadcastReceiver();
-        shelterManager.connect();
+        mShelterManager.connect();
 
 //        drawerList.performItemClick(
 //                drawerList.getAdapter().getView(currentItem, null, null),
 //                currentItem,
 //                drawerList.getAdapter().getItemId(currentItem));
-     }
+    }
 
-    public void onStop(){
+    public void onStop() {
         Log.e("Activity---", "onStop");
         super.onStop();
 
         //shelterManager.unregisterJSONBroadcastReceiver();
-        shelterManager.disconnect();
+        mShelterManager.disconnect();
     }
 
     private class AsyncCityListViewLoader extends AsyncTask<String, Void, Void> {
         private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
 
         @Override
-        protected void onPostExecute(Void aVoid){
+        protected void onPostExecute(Void aVoid) {
             dialog.dismiss();
         }
 
         @Override
-        protected void onPreExecute(){
+        protected void onPreExecute() {
             dialog.setMessage("Downloading city list...");
             dialog.show();
         }
 
         @Override
-        protected Void doInBackground(String... params){
-            try{
+        protected Void doInBackground(String... params) {
+            try {
                 String jsonText = JsonReader.readJsonFromUrl(params[0]);
                 JSONObject root = new JSONObject(jsonText);
                 JSONArray jsonResult = root.getJSONArray("results");
 
-                for (int i = 0 ; i < jsonResult.length(); i++) {
-                    drawerAdapter.add(jsonResult.getString(i));
+                for (int i = 0; i < jsonResult.length(); i++) {
+                    mDrawerAdapter.add(jsonResult.getString(i));
                 }
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             return null;
@@ -369,38 +358,32 @@ public class  MainActivity extends ActionBarActivity implements OnShelterReceive
 
     }
 
-    private class AsyncCityJsonLoader extends AsyncTask<String, Void, ArrayList<Shelter> > {
-        private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+    private void downloadCityData(String... params) {
 
-
-        @Override
-        protected void onPostExecute(ArrayList<Shelter> shelters){
-            mapFragment.setAndUpdateShelters(shelters);
-//            dialog.dismiss();
-//            listFragment.setAndUpdateShelters(shelters);
+        try {
+            DataHolder.jsonStr = JsonReader.readJsonFromUrl(params[0]);
+            mShelters = Shelter.parseFromRoot(new JSONObject(DataHolder.jsonStr));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        @Override
-        protected void onPreExecute(){
-//            dialog.setMessage("Downloading city data...");
-//            dialog.show();
-        }
-
-        @Override
-        protected ArrayList<Shelter>  doInBackground(String... params){
-            try{
-                String jsonText = JsonReader.readJsonFromUrl(params[0]);
-                DataHolder.jsonStr = jsonText;
-                JSONObject jsonObject = new JSONObject(DataHolder.jsonStr);
-                ArrayList<Shelter> shelters = Shelter.parseFromRoot(jsonObject);
-                return shelters;
-        }
-            catch (Exception e){
-                e.printStackTrace();
-            }
-            return null;
-        }
-
     }
+
+    private void refreshMapView() {
+        Log.d(this.toString(), "Download time 4 = " + System.currentTimeMillis());
+        try {
+            mapFragment.setAndUpdateShelters(mShelters);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Log.d(this.toString(), "Download time 5 = " + System.currentTimeMillis());
+    }
+
+    private Runnable mRefreshMapView = new Runnable() {
+        @Override
+        public void run() {
+            refreshMapView();
+        }
+    };
 
 }

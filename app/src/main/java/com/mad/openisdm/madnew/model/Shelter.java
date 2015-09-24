@@ -13,29 +13,16 @@ import java.util.Iterator;
  * A class that represents a Shelter.
  */
 public class Shelter {
-    public int distance;
-    private GeoPoint position;
-    private HashMap<String, String> properties;
-
-    private Shelter(JSONObject shelterJSON) throws  JSONException{
-        Double latitude = shelterJSON.getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
-        Double longitude = shelterJSON.getJSONObject("geometry").getJSONArray("coordinates").getDouble(0);
-        position = new GeoPoint(latitude, longitude);
-        properties = new HashMap<String, String>();
-        Iterator<String> keys = shelterJSON.getJSONObject("properties").keys();
-        while (keys.hasNext()){
-            String key = keys.next();
-            String value = shelterJSON.getJSONObject("properties").getString(key);
-            properties.put(key, value);
-        }
-    }
+    private int mDistance;
+    private GeoPoint mPosition;
+    private HashMap<String, String> mProperties;
 
     public GeoPoint getPosition(){
-        return position;
+        return mPosition;
     }
 
     public HashMap<String, String> getProperties(){
-        return properties;
+        return mProperties;
     }
 
     /**Parse a JSONObject(A geojson file) from the root, and returns a list of shelters in that file
@@ -46,15 +33,33 @@ public class Shelter {
         for (int i = 0 ; i < features.length(); i ++){
             Shelter shelter = new Shelter(features.getJSONObject(i));
             shelter.calculateDistance(DataHolder.userLocation);
-
             result.add(shelter);
         }
         return result;
     }
 
     public void calculateDistance(GeoPoint userLocation){
-        this.distance = position.distanceTo(userLocation);
+        this.mDistance = mPosition.distanceTo(userLocation);
     }
 
+    public int getDistance(){
+        return mDistance;
+    }
+
+    private Shelter(JSONObject shelterJSON) throws  JSONException{
+
+        Double latitude = shelterJSON.getJSONObject("geometry").getJSONArray("coordinates").getDouble(1);
+        Double longitude = shelterJSON.getJSONObject("geometry").getJSONArray("coordinates").getDouble(0);
+
+        mPosition = new GeoPoint(latitude, longitude);
+        mProperties = new HashMap<String, String>();
+
+        Iterator<String> keys = shelterJSON.getJSONObject("properties").keys();
+        while (keys.hasNext()){
+            String key = keys.next();
+            String value = shelterJSON.getJSONObject("properties").getString(key);
+            mProperties.put(key, value);
+        }
+    }
 
 }

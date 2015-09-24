@@ -130,7 +130,7 @@ public class ShelterListFragment extends Fragment{
         {
             for (int j = i + 1; j < shelters.size(); j++)
             {
-                if (shelters.get(i).distance> shelters.get(j).distance) {
+                if (shelters.get(i).getDistance()> shelters.get(j).getDistance()) {
 
                     Shelter temp = shelters.get(j);
                     shelters.set(j, shelters.get(i));

@@ -9,7 +9,11 @@ import com.mad.openisdm.madnew.service.FetchJSONIntentService;
 
 import java.util.HashMap;
 
-/**
+/** Updated by bookjan on 2015/9/23
+ *
+ *  Obsoleted ShelterSourceSelector Class
+ *  Need to refactor
+ *
  * Created by Wilbur on 2015/7/29.
  */
 public class ShelterSourceSelector {

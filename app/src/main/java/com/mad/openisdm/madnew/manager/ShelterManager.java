@@ -25,27 +25,27 @@ import java.util.ArrayList;
  * callback method in Shelter.OnShelterReceiveListener will then be called. See MainActivity for example.
  * */
 public class ShelterManager {
-    private OnShelterReceiveListener listener;
-    private Context context;
-    private JSONBroadcastReceiver jsonBroadcastReceiver;
+    private OnShelterReceiveListener mListener;
+    private Context mContext;
+    private JSONBroadcastReceiver mJsonroadcastReceiver;
 
     /**Constructor takes a Context parameter(your hosting activity), and an implementation of OnShelterReceiveListener*/
     public ShelterManager(Context context, OnShelterReceiveListener listener){
         super();
-        jsonBroadcastReceiver = new JSONBroadcastReceiver();
-        this.listener = listener;
-        this.context = context;
+        mJsonroadcastReceiver = new JSONBroadcastReceiver();
+        this.mListener = listener;
+        this.mContext = context;
     }
 
     /**Set up a BroadcastReceiver for the hosting activity*/
     public void connect(){
         IntentFilter filter = new IntentFilter(JSONBroadcastReceiver.RECEIVE_JSON_ACTION);
         filter.addCategory(Intent.CATEGORY_DEFAULT);
-        context.registerReceiver(jsonBroadcastReceiver, filter);
+        mContext.registerReceiver(mJsonroadcastReceiver, filter);
    }
 
     public void disconnect(){
-        context.unregisterReceiver(jsonBroadcastReceiver);
+        mContext.unregisterReceiver(mJsonroadcastReceiver);
     }
 
 
@@ -80,7 +80,7 @@ public class ShelterManager {
                     try {
                         /*Make a list of Shelters from the JSONObject, and pass the result to the listener's callback method*/
                         ArrayList<Shelter> shelters = Shelter.parseFromRoot(jsonObject);
-                        listener.onShelterReceive(shelters);
+                        mListener.onShelterReceive(shelters);
                     }
                     catch (JSONException e){
                         Toast.makeText(context, "GEOJSON FORMAT ERROR", Toast.LENGTH_SHORT).show();

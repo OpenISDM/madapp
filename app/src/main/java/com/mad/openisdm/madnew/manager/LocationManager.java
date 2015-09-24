@@ -37,6 +37,7 @@ public class LocationManager implements
     protected Activity mActivity;
 
     private static int REQUEST_CODE_RECOVER_PLAY_SERVICES = 200;
+
     private ConnectedCallback mConnectedCallback;
 
     public LocationManager (Activity activity) {
@@ -56,10 +57,8 @@ public class LocationManager implements
             */
             GooglePlayServicesUtil.getErrorDialog(checkGooglePlayServices,
                     mActivity, REQUEST_CODE_RECOVER_PLAY_SERVICES).show();
-
             return false;
         }
-
         return true;
     }
 

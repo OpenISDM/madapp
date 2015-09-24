@@ -86,7 +86,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
 
     private static final  GeoPoint DEFAULT_MAP_CENTER = SOMEWHERE_IN_TAIWAN;
     private static final GeoPoint DEFAULT_USER_LOCATION = SOMEWHERE_IN_TAIWAN;
-    private static final int DEFAULT_ZOOM_LEVEL = 9;
+    private static final int DEFAULT_ZOOM_LEVEL = 3;
 
     private MapController mapController;
     private Marker userLocationMarker;
@@ -286,11 +286,11 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
             newMarker.setPosition(shelter.getPosition());
 
             Drawable shelterIcon;
-            if (shelter.distance <= 1000){
+            if (shelter.getDistance() <= 1000){
                 shelterIcon = getResources().getDrawable(R.drawable.green_marker);
-            }else if (shelter.distance > 1000 && shelter.distance <= 3000){
+            }else if (shelter.getDistance() > 1000 && shelter.getDistance() <= 3000){
                 shelterIcon = getResources().getDrawable(R.drawable.orange_marker);
-            }else if (shelter.distance > 3000 && shelter.distance <= 10000){
+            }else if (shelter.getDistance() > 3000 && shelter.getDistance() <= 10000){
                 shelterIcon = getResources().getDrawable(R.drawable.pink_marker);
             }else{
                 shelterIcon = getResources().getDrawable(R.drawable.red_marker);
