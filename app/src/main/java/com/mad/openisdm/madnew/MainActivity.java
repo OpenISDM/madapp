@@ -4,8 +4,6 @@ import android.app.ProgressDialog;
 
 import android.content.res.Configuration;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -25,21 +23,20 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
-import com.mad.openisdm.madnew.listener.OnShelterReceiveListener;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.model.Shelter;
-import com.mad.openisdm.madnew.manager.ShelterManager;
 import com.mad.openisdm.madnew.util.JsonReader;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer;
 import org.osmdroid.util.GeoPoint;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 
 
-public class  MainActivity extends AppCompatActivity implements OnShelterReceiveListener, OnLocationChangedListener {
+public class  MainActivity extends AppCompatActivity implements OnLocationChangedListener {
     private static final String CURRENT_ITEM_KEY = "current item key";
     private static final String LIST_FRAGMENT_KEY = "LIST_FRAGMENT_KEY";
     private static final String MAP_FRAGMENT_KEY = "MAP_FRAGMENT_KEY";
@@ -52,11 +49,9 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
     private MapFragment mapFragment;
     private ShelterListFragment mListFragment;
     private ArrayList<Shelter> mShelters;
-    private Handler mHandle = new Handler(Looper.getMainLooper());
 
     MyFragmentStatePagerAdapter mPagerAdapter;
     ViewPager mViewPager;
-    ShelterManager mShelterManager;
 
 
     @Override
@@ -64,8 +59,6 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
         Log.e("Activity---", "onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        mShelterManager = new ShelterManager(this, this);
 
         if (savedInstanceState != null) {
             mCurrentItem = savedInstanceState.getInt(CURRENT_ITEM_KEY);
@@ -91,8 +84,6 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
         mDrawerAdapter = new ArrayAdapter(this, R.layout.drawer_list_item);
         mDrawerList.setAdapter(mDrawerAdapter);
 
-        mShelterManager.connect();
-
         new AsyncCityListViewLoader().execute(Config.INTERFACE_SERVER_CITY_LIST_URL);
 
         mDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -105,21 +96,8 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
                 mDrawerLayout.closeDrawers();
 
                 final String url = Config.INTERFACE_SERVER_CITY_DATA_URL_PREFIX + item;
+                new MarkComputation().execute(url);
 
-
-                new Thread(new Runnable() {
-
-                    @Override
-                    public void run() {
-                        Log.d(this.toString(), "Download time 1 = " + System.currentTimeMillis());
-                        downloadCityData(url);
-                        Log.d(this.toString(), "Download time 2 = " + System.currentTimeMillis());
-                        mHandle.post(mRefreshMapView);
-                        Log.d(this.toString(), "Download time 3 = " + System.currentTimeMillis());
-                        //refreshMapView();
-                    }
-
-                }).start();
             }
         });
 
@@ -230,8 +208,8 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void onShelterReceive(ArrayList<Shelter> shelters) {
+
+    private void onShelterReceive(ArrayList<Shelter> shelters) {
         this.mShelters = shelters;
         mapFragment.setAndUpdateShelters(shelters);
         mListFragment.setAndUpdateShelters(shelters);
@@ -309,8 +287,6 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
     protected void onStart() {
         Log.e("Activity---", "onStart");
         super.onStart();
-        //shelterManager.registerJSONBroadcastReceiver();
-        mShelterManager.connect();
 
 //        drawerList.performItemClick(
 //                drawerList.getAdapter().getView(currentItem, null, null),
@@ -321,9 +297,6 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
     public void onStop() {
         Log.e("Activity---", "onStop");
         super.onStop();
-
-        //shelterManager.unregisterJSONBroadcastReceiver();
-        mShelterManager.disconnect();
     }
 
     private class AsyncCityListViewLoader extends AsyncTask<String, Void, Void> {
@@ -358,32 +331,37 @@ public class  MainActivity extends AppCompatActivity implements OnShelterReceive
 
     }
 
-    private void downloadCityData(String... params) {
+    private class MarkComputation extends AsyncTask<String, Void, RadiusMarkerClusterer> {
+        private final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
 
-        try {
-            DataHolder.jsonStr = JsonReader.readJsonFromUrl(params[0]);
-            mShelters = Shelter.parseFromRoot(new JSONObject(DataHolder.jsonStr));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void refreshMapView() {
-        Log.d(this.toString(), "Download time 4 = " + System.currentTimeMillis());
-        try {
-            mapFragment.setAndUpdateShelters(mShelters);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        Log.d(this.toString(), "Download time 5 = " + System.currentTimeMillis());
-    }
-
-    private Runnable mRefreshMapView = new Runnable() {
         @Override
-        public void run() {
-            refreshMapView();
+        protected void onPostExecute(RadiusMarkerClusterer rmc) {
+            dialog.dismiss();
+            mapFragment.updateClusterer(rmc);
+            mListFragment.setAndUpdateShelters(mShelters);
         }
-    };
 
+        @Override
+        protected void onPreExecute() {
+            dialog.setMessage("Downloading city list...");
+            dialog.show();
+        }
+
+        @Override
+        protected RadiusMarkerClusterer doInBackground(String... params) {
+            try {
+
+                Log.d(this.toString(), "Download time START = " + System.currentTimeMillis());
+                DataHolder.jsonStr = JsonReader.readJsonFromUrl(params[0]);
+                mShelters = Shelter.parseFromRoot(new JSONObject(DataHolder.jsonStr));
+                Log.d(this.toString(), "Download time END = " + System.currentTimeMillis());
+
+                return mapFragment.buildClustererFromShelters(mShelters);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+    }
 }

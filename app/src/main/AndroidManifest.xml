@@ -24,10 +24,6 @@
         </activity>
 
         <service
-            android:name=".service.FetchJSONIntentService"
-            android:exported="false" >
-        </service>
-        <service
             android:name=".service.FetchRoadIntentService"
             android:exported="false" >
         </service>

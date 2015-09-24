@@ -9,5 +9,5 @@ import org.osmdroid.util.GeoPoint;
 
 public interface OnLocationChangedListener {
     /**Callback method when user location is changed in MapFragment*/
-    public void onLocationChanged(GeoPoint userLocation);
+    void onLocationChanged(GeoPoint userLocation);
 }

@@ -11,10 +11,7 @@
 *
 * To update the map with a list of shelters, call the method updateUIWithShelters.
 *
-* Note: this fragment by itself will not display any shelter information
-* User must first create an instance of ShelterManager and call ShelterManager.connect(), then choose the
-* shelter to display using ShelterSourceSelector.
-*
+* *
 * */
 
 
@@ -41,10 +38,7 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResult;
-import com.google.android.gms.location.internal.LocationRequestInternal;
 import com.mad.openisdm.madnew.manager.LocationManager;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
@@ -72,8 +66,6 @@ import java.util.HashMap;
 
 public class MapFragment extends Fragment implements MapEventsReceiver, LocationManager.ConnectedCallback {
 
-
-    private static final GeoPoint SOMEWHERE_IN_GERMANY = new GeoPoint(35.5069039, 139.680770);
     private static final GeoPoint SOMEWHERE_IN_TAIWAN = new GeoPoint(22.6369039, 120.260770);
 
     private static final String MAP_CENTER_LATITUDE_KEY = "map_center_lat";
@@ -106,7 +98,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
 
     private RoadReceiver roadReceiver;
 
-    private static boolean MANUAL_LOCATION_DEBUG = true;
+    private static boolean mManualLocationDebug = true;
     private boolean firstStartUp;
     private GeoPoint mUserLocation;
     private GeoPoint mMapCenter;
@@ -114,14 +106,12 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
     /**
      * Check location settings
      */
-    protected LocationSettingsRequest mLocationSettingsRequest;
 
     public static MapFragment newInstance() {
         Bundle args = new Bundle();
         MapFragment fragment = new MapFragment();
         fragment.setArguments(args);
         return fragment;
-
     }
 
 
@@ -262,7 +252,16 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
         map.invalidate();
     }
 
-    private void updateClusterer(RadiusMarkerClusterer newClusterer){
+    public void updateClusterer(RadiusMarkerClusterer newClusterer){
+        if (recreate){
+            if (navigating){
+                updateUIWithRoad(currentRoad);
+            }
+            recreate = false;
+        }else{
+            clearInfoWindow();
+            clearRoad();
+        }
         clearClusterer();
         clusterer = newClusterer;
         addOverlay(newClusterer);
@@ -279,13 +278,16 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
         }
     }
 
-    private RadiusMarkerClusterer buildClustererFromShelters(ArrayList<Shelter> shelters){
+    public RadiusMarkerClusterer buildClustererFromShelters(ArrayList<Shelter> shelters){
         RadiusMarkerClusterer newClusterer = new RadiusMarkerClusterer(activity);
+
+        Log.d(this.toString(), "RadiusMarkerClusterer START = " + System.currentTimeMillis());
+
         for (Shelter shelter: shelters){
             Marker newMarker = new Marker(map);
             newMarker.setPosition(shelter.getPosition());
-
             Drawable shelterIcon;
+
             if (shelter.getDistance() <= 1000){
                 shelterIcon = getResources().getDrawable(R.drawable.green_marker);
             }else if (shelter.getDistance() > 1000 && shelter.getDistance() <= 3000){
@@ -295,28 +297,33 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
             }else{
                 shelterIcon = getResources().getDrawable(R.drawable.red_marker);
             }
+
             newMarker.setIcon(shelterIcon);
             NavigateInfoWindow infoWindow = new NavigateInfoWindow(map, newMarker);
             HashMap<String, String> properties = shelter.getProperties();
+
             for (String key:properties.keySet()) {
                 infoWindow.addProperty(key, properties.get(key));
             }
+
             newMarker.setInfoWindow(infoWindow);
             newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
             newClusterer.setMaxClusteringZoomLevel(14);
             newClusterer.add(newMarker);
-        }
 
+        }
 
         Drawable clusterIconD = getResources().getDrawable(R.drawable.marker_cluster);
         Bitmap clusterIcon = ((BitmapDrawable)clusterIconD).getBitmap();
         newClusterer.setIcon(clusterIcon);
         newClusterer.setRadius(70);
+
+        Log.d(this.toString(), "RadiusMarkerClusterer END = " + System.currentTimeMillis());
+
         return newClusterer;
     }
 
-    public void
-    updateUIWithShelters(ArrayList<Shelter> shelters){
+    public void updateUIWithShelters(ArrayList<Shelter> shelters){
         updateClusterer(buildClustererFromShelters(shelters));
     }
 
@@ -435,7 +442,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
             super(R.layout.bonuspack_bubble, mapView);
             Button locationBtn = (Button)(mView.findViewById(R.id.bubble_btn));
 
-            if (MANUAL_LOCATION_DEBUG){
+            if (mManualLocationDebug){
                 locationBtn.setText("Set location");
                 locationBtn.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View view) {

@@ -36,7 +36,7 @@ public class LocationManager implements
 
     protected Activity mActivity;
 
-    private static int REQUEST_CODE_RECOVER_PLAY_SERVICES = 200;
+    final static int REQUEST_CODE_RECOVER_PLAY_SERVICES = 200;
 
     private ConnectedCallback mConnectedCallback;
 

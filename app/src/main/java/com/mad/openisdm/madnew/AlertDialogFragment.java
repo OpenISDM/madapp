@@ -34,9 +34,6 @@ import android.support.v4.app.DialogFragment;
 
 public class AlertDialogFragment extends DialogFragment {
 
-    protected static double latitude, longitude;
-    private AlertDialog.Builder alertDialog;
-    private String title, msg;
 
     /**
      * Function Name:
@@ -67,11 +64,15 @@ public class AlertDialogFragment extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+
+        AlertDialog.Builder alertDialog;
+        String title, mMsg;
+
         title = getArguments().getString("title");
-        msg = getArguments().getString("msg");
+        mMsg = getArguments().getString("msg");
         alertDialog = new AlertDialog.Builder(getActivity());
         alertDialog.setTitle(title);
-        alertDialog.setMessage(msg);
+        alertDialog.setMessage(mMsg);
 
 
         alertDialog.setPositiveButton("OK",

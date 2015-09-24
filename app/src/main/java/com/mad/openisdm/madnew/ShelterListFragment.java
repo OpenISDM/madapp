@@ -1,8 +1,5 @@
 /**This fragment presents a basic list layout that holds shelter information
 *
-* Note: this fragment by itself will not display any shelter information
-* User must first create an instance of ShelterManager and call ShelterManager.connect(), then choose the
-* shelter to display using ShelterSourceSelector.
 *
 * To update the map with a list of shelters, call the method updateUIWithShelters.
 *
@@ -27,8 +24,6 @@ import java.util.ArrayList;
 
 public class ShelterListFragment extends Fragment{
     private ListView list;
-    private ArrayAdapter<String> adapter;
-
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -44,8 +39,11 @@ public class ShelterListFragment extends Fragment{
 
     /*This method takes a list of shelters, and display them on the list layout*/
     public void updateUIWithShelters(ArrayList<Shelter> shelters){
+
         ArrayList<Shelter> sortedShelters = ShelterListFragment.selectionSort(shelters);
+        ArrayAdapter<String> adapter;
         ArrayList<String> array = new ArrayList<String>();
+
         for (Shelter shelter : sortedShelters){
             String properties = "";
             for (String key :shelter.getProperties().keySet()){
@@ -122,7 +120,6 @@ public class ShelterListFragment extends Fragment{
         Log.e("List---", this +"onActivity created");
         super.onActivityCreated(savedInstanceState);
     }
-
 
     /*Sort a list of shelter based on its distance attribute, from lowest to highest*/
     private static ArrayList<Shelter> selectionSort(ArrayList<Shelter> shelters) {
