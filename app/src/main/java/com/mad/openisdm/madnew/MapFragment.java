@@ -1,18 +1,18 @@
 /**This fragment handles a map UI. Activity that hosts this fragment must implement the interface: OnLocationChangedListener
-* The map UI is implemented using OSMDroid's map view. ODMDroid's MapView class permits offline-viewing, nevertheless, other
-* functionality such as routing(navigation) requires wireless access.
-*
-* This fragment  fetches GEOJSON files containing shelter information from a server and displays them on a map. It also provides
+ * The map UI is implemented using OSMDroid's map view. ODMDroid's MapView class permits offline-viewing, nevertheless, other
+ * functionality such as routing(navigation) requires wireless access.
+ *
+ * This fragment  fetches GEOJSON files containing shelter information from a server and displays them on a map. It also provides
  * other basic map functionalities.
-*
-* When this fragment first creates, the map uses the GPS system to locate the current user location, and display such on the map.
-* During first launch, when user location is undetectable(GPS is weak when used indoor), the default location is determined by the constant DEFAULT_USER_LOCATION, which
-* is currently set to (somewhere in) Taipei.
-*
-* To update the map with a list of shelters, call the method updateUIWithShelters.
-*
-* *
-* */
+ *
+ * When this fragment first creates, the map uses the GPS system to locate the current user location, and display such on the map.
+ * During first launch, when user location is undetectable(GPS is weak when used indoor), the default location is determined by the constant DEFAULT_USER_LOCATION, which
+ * is currently set to (somewhere in) Taipei.
+ *
+ * To update the map with a list of shelters, call the method updateUIWithShelters.
+ *
+ * *
+ * */
 
 
 package com.mad.openisdm.madnew;
@@ -258,7 +258,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
                 updateUIWithRoad(currentRoad);
             }
             recreate = false;
-        }else{
+        } else{
             clearInfoWindow();
             clearRoad();
         }
@@ -344,7 +344,7 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
     }
 
     public void clearPinpoint(){
-        if (pinPointMarker != null){
+        if (pinPointMarker != null) {
             removeOverlay(pinPointMarker);
             pinPointMarker = null;
         }
@@ -562,4 +562,3 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
         }
     }
 }
-

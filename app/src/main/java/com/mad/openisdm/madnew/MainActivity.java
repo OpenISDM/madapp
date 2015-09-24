@@ -1,23 +1,29 @@
 package com.mad.openisdm.madnew;
 
-import android.app.ProgressDialog;
 
-import android.content.res.Configuration;
 import android.os.AsyncTask;
+import android.os.Bundle;
+
+import android.app.ProgressDialog;
+import android.content.res.Configuration;
+
+import android.util.Log;
+
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
+
 import android.support.v7.app.ActionBar;
-import android.os.Bundle;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -29,6 +35,7 @@ import com.mad.openisdm.madnew.util.JsonReader;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer;
 import org.osmdroid.util.GeoPoint;
 
@@ -36,7 +43,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 
+
 public class  MainActivity extends AppCompatActivity implements OnLocationChangedListener {
+
     private static final String CURRENT_ITEM_KEY = "current item key";
     private static final String LIST_FRAGMENT_KEY = "LIST_FRAGMENT_KEY";
     private static final String MAP_FRAGMENT_KEY = "MAP_FRAGMENT_KEY";
@@ -52,7 +61,6 @@ public class  MainActivity extends AppCompatActivity implements OnLocationChange
 
     MyFragmentStatePagerAdapter mPagerAdapter;
     ViewPager mViewPager;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -161,6 +169,7 @@ public class  MainActivity extends AppCompatActivity implements OnLocationChange
         getSupportActionBar().setTitle(str);
     }
 
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -175,6 +184,7 @@ public class  MainActivity extends AppCompatActivity implements OnLocationChange
         // Sync the toggle state after onRestoreInstanceState has occurred.
         mDrawerToggle.syncState();
     }
+
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -226,8 +236,10 @@ public class  MainActivity extends AppCompatActivity implements OnLocationChange
         mListFragment.setAndUpdateShelters(mShelters);
     }
 
+
     private class MyFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
         public MyFragmentStatePagerAdapter(FragmentManager fm) {
+
             super(fm);
         }
 
