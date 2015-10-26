@@ -1,18 +1,18 @@
 <resources>
 
 
-    <style name="AppTheme" parent="@style/Theme.AppCompat.Light.DarkActionBar">
-        <item name="actionBarTabStyle">@style/ActionBarTabStyle.Mad</item>
-        <item name="actionBarStyle">@style/ActionBar.Solid.Mad</item>
-    </style>
+    <!--<style name="AppTheme" parent="@style/Theme.AppCompat.Light.DarkActionBar">-->
+        <!--<item name="actionBarTabStyle">@style/ActionBarTabStyle.Mad</item>-->
+        <!--<item name="actionBarStyle">@style/ActionBar.Solid.Mad</item>-->
+    <!--</style>-->
 
-    <style name="ActionBar.Solid.Mad" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">
-        <item name="background">@drawable/ab_solid_mad</item>
-        <item name="backgroundStacked">@drawable/ab_stacked_solid_mad</item>
-    </style>
+    <!--<style name="ActionBar.Solid.Mad" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">-->
+        <!--<item name="background">@drawable/ab_solid_mad</item>-->
+        <!--<item name="backgroundStacked">@drawable/ab_stacked_solid_mad</item>-->
+    <!--</style>-->
 
-    <style name="ActionBarTabStyle.Mad" parent="@style/Widget.AppCompat.ActionBar.TabView">
-        <item name="android:background">@drawable/tab_indicator_ab</item>
-    </style>
+    <!--<style name="ActionBarTabStyle.Mad" parent="@style/Widget.AppCompat.ActionBar.TabView">-->
+        <!--<item name="android:background">@drawable/tab_indicator_ab</item>-->
+    <!--</style>-->
 
 </resources>

@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
 
     defaultConfig {
         applicationId "com.mad.openisdm.madnew"
-        minSdkVersion 9
+        minSdkVersion 14
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -21,11 +21,15 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile ('com.mapbox.mapboxsdk:mapbox-android-sdk:0.7.4@aar'){
+        transitive=true
+    }
+
     compile files('libs/osmdroid-android-4.3.jar')
     compile files('libs/slf4j-android-1.6.1-RC1.jar')
     compile files('json-20140107.jar')
     compile files('osmbonuspack_v5.1.jar')
     compile 'com.android.support:appcompat-v7:22.2.0'
-    compile 'com.android.support:support-v4:22.2.0'
+    compile 'com.android.support:support-v4:23.0.0'
     compile 'com.google.android.gms:play-services:7.5.0'
 }

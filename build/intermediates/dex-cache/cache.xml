@@ -2,214 +2,53 @@
 <items version="2" >
 
     <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-gcm/7.5.0/jars/classes.jar"
+        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.mapbox.mapboxsdk/mapbox-android-sdk/0.7.4/jars/classes.jar"
         jumboMode="false"
-        revision="22.0.1"
-        sha1="8d736fefa22d896e84a268354b3ed48a42663150">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-cba5d15ffd197f562ebcd4fb9d512c79426d87e1.jar" />
+        revision="23.0.1"
+        sha1="4bd64ebaab7edb0bccbb031dbdb7b1a7239d58f7">
+        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-41c8c9eafa8f04c3ef0daafc27c100407996469f.jar" />
     </item>
     <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-identity/7.5.0/jars/classes.jar"
+        jar="/Users/JanSu/.gradle/caches/modules-2/files-2.1/com.jakewharton/disklrucache/2.0.2/93b399470e72c0bc8cb52379943b63c9aa586cd8/disklrucache-2.0.2.jar"
         jumboMode="false"
-        revision="22.0.1"
-        sha1="d405025c600055237c171a0bbabaa49d69696573">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-5de4b3bbdc4b5093621b3bbd5ded656540461dfb.jar" />
+        revision="23.0.1"
+        sha1="93b399470e72c0bc8cb52379943b63c9aa586cd8">
+        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/disklrucache-2.0.2-2e0746dc674296ccfd8eaf1c2363dc0657318391.jar" />
     </item>
     <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-plus/7.5.0/jars/classes.jar"
+        jar="/Users/JanSu/.gradle/caches/modules-2/files-2.1/com.vividsolutions/jts/1.13/3ccfb9b60f04d71add996a666ceb8902904fd805/jts-1.13.jar"
         jumboMode="false"
-        revision="22.0.1"
-        sha1="272bc5d7063f24bc3a33ea1d318cde8f31f5ec4c">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-5c2c41f0402c57b5759e60cba26cef72bbe21352.jar" />
+        revision="23.0.1"
+        sha1="3ccfb9b60f04d71add996a666ceb8902904fd805">
+        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/jts-1.13-ddfc6be09eb45e6708b6c477019720b7c2905c4c.jar" />
     </item>
     <item
-        jar="/Users/JanSu/Library/Android/sdk/extras/android/m2repository/com/android/support/support-annotations/22.2.0/support-annotations-22.2.0.jar"
+        jar="/Users/JanSu/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp/okhttp/2.4.0/40340c0748190fe897baf7bffbc1b282734294e5/okhttp-2.4.0.jar"
         jumboMode="false"
-        revision="22.0.1"
-        sha1="66b42a1f3eb7676070b7ef7f14b603483aecbee1">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/support-annotations-22.2.0-fbfd37c533e437e7e7f4d9ab5d4e314145a0d2a6.jar" />
+        revision="23.0.1"
+        sha1="40340c0748190fe897baf7bffbc1b282734294e5">
+        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/okhttp-2.4.0-2aa413ccd4501cb680b1c2ec5c982bfb3b8b1a57.jar" />
     </item>
     <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-appinvite/7.5.0/jars/classes.jar"
+        jar="/Users/JanSu/.gradle/caches/modules-2/files-2.1/com.squareup.okhttp/okhttp-urlconnection/2.4.0/a0c195f14cefc7597e0bebf22c3e7b43920dcf4/okhttp-urlconnection-2.4.0.jar"
         jumboMode="false"
-        revision="22.0.1"
-        sha1="63ec6e9f4fe5482a7447d0f3091b8e543a02554c">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-59a31bfb7bddf53cf89ee7630d7a988feb4716c1.jar" />
+        revision="23.0.1"
+        sha1="0a0c195f14cefc7597e0bebf22c3e7b43920dcf4">
+        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/okhttp-urlconnection-2.4.0-4c0528a26028aa40b9fbbb7c9716369f05d870e3.jar" />
     </item>
     <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/libs/osmbonuspack_v5.1.jar"
+        jar="/Users/JanSu/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio/1.4.0/5b72bf48563ea8410e650de14aa33ff69a3e8c35/okio-1.4.0.jar"
         jumboMode="false"
-        revision="22.0.1"
-        sha1="6056a0c43cd37168d2bbcc0bdac23b9b8c5452f2">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/osmbonuspack_v5.1-e2bca3a322ed3a97073e8cea1696e3f98f0cb5a8.jar" />
+        revision="23.0.1"
+        sha1="5b72bf48563ea8410e650de14aa33ff69a3e8c35">
+        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/okio-1.4.0-21bd02eb98945678d4fdd30eb8ba9162a5667f6e.jar" />
     </item>
     <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-fitness/7.5.0/jars/classes.jar"
+        jar="/Users/JanSu/.gradle/caches/modules-2/files-2.1/com.nineoldandroids/library/2.4.0/e9b63380f3a242dbdbf103a2355ad7e43bad17cb/library-2.4.0.jar"
         jumboMode="false"
-        revision="22.0.1"
-        sha1="a172852a35ff919e85b9b7f14bbc15c5bee25520">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-99700c14195dc7d848f1147f2e8974eb3d180e90.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-maps/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="06a42becc33232ec0ee125161da68c1829c9f8fd">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-33926b155388491c5f789ad4b0ea6de9912dba8e.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.android.support/mediarouter-v7/22.0.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="a1372c17fccacca753d3951d3ad820571cbce075">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-ebe0deeb5b06d085b3b7e06245ac1799ca3ea9bd.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-safetynet/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="1a6411087ab88ce5542f593e63a2752b6b0d6f1a">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-a8c181b3c3f2978dcf98805e9767a7959ff3bd95.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-location/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="1e98ef3f124bb7a11f8575f9ff5dfea330b61b6f">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-f6184fc010a70994f161f6d6721008483d1203b2.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-appindexing/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="f02127a85abd52a2cd526d4c2409f21969f80ee8">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-17bb654595362ed8c3f23ae9e8d5fb1ebbad4374.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/libs/slf4j-android-1.6.1-RC1.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="a0b527e8aabcc1f1e97d1674dc3f4f0794ec5df1">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/slf4j-android-1.6.1-RC1-0e8fbc9a90fd633f77f6ebe133bcd31cbfcfd2a0.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.android.support/mediarouter-v7/22.0.0/jars/libs/internal_impl-22.0.0.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="ba3df4eb0a630d7de294f0e48d3f9267d279b784">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/internal_impl-22.0.0-cfd13e106f15201e1758ffae7c068649c85498bb.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-ads/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="29ebc7e04d877062317c8cc0e68b20f0c1fcda66">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-2a218eaea024df967cd6827215de64303fbd47c4.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/22.2.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="73753982da6bde518f3a4c6b372749981d14d1a0">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-e504d36077c333178cbbe0a11d9a2e95a8ddfddd.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-base/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="a78183f30e769a98ab4820794f597763088d3065">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-b7f491619a04fda560d7c71df0f318f42bfdb4de.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/libs/internal_impl-22.2.0.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="57f2ab85c164ff1676ec64dee787981c046fab79">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/internal_impl-22.2.0-d01faa2d6445708ee118045178dced1fe1a77890.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-drive/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="f44d03c138cb6488fdbaa65e3a7e5878861a56d8">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-86d2702eea83f120e1c10b516b333620d8fe5be5.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-analytics/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="e7b35244f50663b3f8d150714bca9ecd7a290da1">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-45d506f6931d1b446d055fb18ed1cd58b1149b34.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-wearable/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="69dd177337ead693c408c8dddc9546bb6f1244fa">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-9b4fb7db4876f7930226326bed4b95e04b7b7b54.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-panorama/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="ba207be21987c11b37d9f8faa08ed6e722569f30">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-8ece65256881a444941d79c54eb6c1f91085eb0c.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="1ee588ff2c4daf7b97c1cbf922a6c7f027285c2f">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-079fda6eb2a0e68a0313943a0edc0e76e0922fc8.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-nearby/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="6440e5e5cfe368f9bff3c537fb8988048069cb33">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-5d65ab11a5af5e933700d0717fb76a5040877d35.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-wallet/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="6836d188602ec5382d1967c58b00960eb8ff8773">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-651a0e8cfd36a60775102d78b46e8be289f70b6f.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/libs/json-20140107.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="d1ffca6e2482b002702c6a576166fd685e3370e3">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/json-20140107-471c98227070c5156573a65a6d483589b64f95e8.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/libs/osmdroid-android-4.3.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="2fcf7bc3cb27daa6e67c8990ea418d19f6b5b296">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/osmdroid-android-4.3-b4ae44ee11946df78875384b6a750d66539da3a9.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-cast/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="8e3a972f28b8bae817e382257ba177a31bcadbbc">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-2506e677b98f9e8bab185d3e5673005089a284f5.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-appstate/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="68c140702c7242d914655bcb3164d9e8c45b84cb">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-2e4cd5117bc516cbd4fec87628a1a9d3183dfcec.jar" />
-    </item>
-    <item
-        jar="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/exploded-aar/com.google.android.gms/play-services-games/7.5.0/jars/classes.jar"
-        jumboMode="false"
-        revision="22.0.1"
-        sha1="02bac2dc792d78241077861566f2c82da955e7fa">
-        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/classes-a3243adcc2b49a15302203aada56a738d1915c4d.jar" />
+        revision="23.0.1"
+        sha1="e9b63380f3a242dbdbf103a2355ad7e43bad17cb">
+        <dex dex="/Users/JanSu/Desktop/Development/madapp/app/build/intermediates/pre-dexed/debug/library-2.4.0-97f14c8d71fc714ea3066b9cfeb6c07430f4da6d.jar" />
     </item>
 
 </items>

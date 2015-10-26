@@ -18,6 +18,7 @@
 package com.mad.openisdm.madnew;
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -27,7 +28,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+//import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,7 +39,7 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.google.android.gms.location.LocationSettingsRequest;
+//import com.google.android.gms.location.LocationSettingsRequest;
 import com.mad.openisdm.madnew.manager.LocationManager;
 import com.mad.openisdm.madnew.model.DataHolder;
 import com.mad.openisdm.madnew.listener.OnLocationChangedListener;
@@ -118,6 +119,8 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
 
         clusterer = null;
         pinPointMarker = null;
@@ -288,6 +291,8 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
             newMarker.setPosition(shelter.getPosition());
             Drawable shelterIcon;
 
+            Log.d(this.toString(), "Time START = " + System.currentTimeMillis());
+
             if (shelter.getDistance() <= 1000){
                 shelterIcon = getResources().getDrawable(R.drawable.green_marker);
             }else if (shelter.getDistance() > 1000 && shelter.getDistance() <= 3000){
@@ -305,6 +310,8 @@ public class MapFragment extends Fragment implements MapEventsReceiver, Location
             for (String key:properties.keySet()) {
                 infoWindow.addProperty(key, properties.get(key));
             }
+
+            Log.d(this.toString(), "Time END = " + System.currentTimeMillis());
 
             newMarker.setInfoWindow(infoWindow);
             newMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
